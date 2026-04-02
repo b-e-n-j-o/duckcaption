@@ -8,12 +8,24 @@
 <body>
     <div class="container">
         <h1>🦆 Duckmotion Transcription</h1>
-        
-        <!-- Section 1: Export audio depuis Premiere -->
+
         <section>
-            <h2>1. Exporter l'audio</h2>
-            <sp-button id="exportAudioBtn">Exporter audio de la timeline</sp-button>
-            <p id="exportStatus"></p>
+            <h2>🔌 Connexion Backend</h2>
+            <sp-button id="testBackendBtn">Tester le backend</sp-button>
+            <p id="backendStatus"></p>
+        </section>
+        <hr>
+
+        <!-- Section 1: Import audio -->
+        <section>
+            <h2>1. Sélectionner l'audio</h2>
+
+            <!-- Option A: Import fichier -->
+            <sp-button id="importFileBtn">Importer un fichier audio</sp-button>
+            <p id="fileStatus"></p>
+
+            <!-- Option B: Export timeline (désactivé pour l'instant) -->
+            <!-- <sp-button id="exportAudioBtn" disabled>Exporter timeline (bientôt)</sp-button> -->
         </section>
 
         <hr>

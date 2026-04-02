@@ -4,40 +4,53 @@ let exportedAudioPath = null;
 
 // Au chargement
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('exportAudioBtn').addEventListener('click', exportAudio);
+    document.getElementById('testBackendBtn').addEventListener('click', testBackend);
+    document.getElementById('importFileBtn').addEventListener('click', importAudioFile);
     document.getElementById('transcribeBtn').addEventListener('click', transcribe);
     document.getElementById('downloadBtn').addEventListener('click', downloadSRT);
 });
 
-// 1. Exporter l'audio depuis Premiere
-async function exportAudio() {
-    const { app } = require('premierepro');
-    const fs = require('uxp').storage.localFileSystem;
-    
-    const status = document.getElementById('exportStatus');
-    
+async function testBackend() {
+    const status = document.getElementById('backendStatus');
+
     try {
-        const sequence = app.project.activeSequence;
-        if (!sequence) {
-            status.textContent = '❌ Aucune séquence active';
+        status.textContent = '⏳ Test en cours...';
+
+        const response = await fetch(`${BACKEND_URL}/`, {
+            method: 'GET'
+        });
+
+        if (response.ok) {
+            status.textContent = '✅ Backend accessible !';
+        } else {
+            status.textContent = `⚠️ Backend répondu avec status ${response.status}`;
+        }
+    } catch (error) {
+        status.textContent = '❌ Backend inaccessible : ' + error.message;
+    }
+}
+
+// 1. Import fichier audio
+async function importAudioFile() {
+    const fs = require('uxp').storage.localFileSystem;
+    const status = document.getElementById('fileStatus');
+
+    try {
+        const file = await fs.getFileForOpening({
+            types: ['audio', 'video']
+        });
+
+        if (!file) {
+            status.textContent = '❌ Aucun fichier sélectionné';
             return;
         }
-        
-        status.textContent = '⏳ Export en cours...';
-        
-        // Créer un fichier temporaire
-        const tempFolder = await fs.getTemporaryFolder();
-        const audioFile = await tempFolder.createFile('audio_export.wav', { overwrite: true });
-        
-        // TODO: Utiliser l'API Premiere pour exporter l'audio
-        // Pour l'instant, simulation
-        exportedAudioPath = audioFile.nativePath;
-        
-        status.textContent = '✅ Audio exporté : ' + sequence.name;
+
+        exportedAudioPath = file.nativePath;
+
+        status.textContent = `✅ Fichier chargé : ${file.name}`;
         document.getElementById('transcribeBtn').disabled = false;
-        
     } catch (error) {
-        status.textContent = '❌ Erreur: ' + error.message;
+        status.textContent = '❌ Erreur : ' + error.message;
         console.error(error);
     }
 }
