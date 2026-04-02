@@ -84,7 +84,7 @@ sp-progress-bar {
 .button-group {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px 48px;
+    gap: 12px 98px;
     align-items: center;
     margin-bottom: 8px;
 }
