@@ -8,6 +8,11 @@
     "app": "premierepro",
     "minVersion": "25.0"
   },
+  "requiredPermissions": [
+    "network",
+    "localFileSystem",
+    "launchProcess"
+  ],
   "entrypoints": [
     {
       "type": "panel",
