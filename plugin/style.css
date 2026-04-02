@@ -1,0 +1,48 @@
+body {
+    background-color: #1e1e1e;
+    color: #e8e8e8;
+    padding: 20px;
+    font-family: Adobe Clean, sans-serif;
+}
+
+h1 {
+    color: #ffb347;
+    font-size: 20px;
+    margin-bottom: 20px;
+}
+
+h2 {
+    color: #ccc;
+    font-size: 16px;
+    margin-top: 15px;
+    margin-bottom: 10px;
+}
+
+section {
+    margin-bottom: 20px;
+}
+
+hr {
+    border: none;
+    border-top: 1px solid #444;
+    margin: 20px 0;
+}
+
+sp-button {
+    margin: 10px 0;
+}
+
+sp-textfield {
+    width: 100%;
+    margin: 10px 0;
+}
+
+sp-progress-bar {
+    margin: 10px 0;
+}
+
+#exportStatus, #transcribeStatus {
+    font-size: 12px;
+    color: #aaa;
+    margin-top: 5px;
+}

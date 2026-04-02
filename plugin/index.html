@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script src="index.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🦆 Duckmotion Transcription</h1>
+        
+        <!-- Section 1: Export audio depuis Premiere -->
+        <section>
+            <h2>1. Exporter l'audio</h2>
+            <sp-button id="exportAudioBtn">Exporter audio de la timeline</sp-button>
+            <p id="exportStatus"></p>
+        </section>
+
+        <hr>
+        
+        <!-- Section 2: Upload & Transcription -->
+        <section>
+            <h2>2. Transcrire</h2>
+            <sp-textfield id="contextInput" placeholder="Contexte (optionnel)" quiet></sp-textfield>
+            <sp-button id="transcribeBtn" disabled>Lancer transcription</sp-button>
+            <sp-progress-bar id="progressBar" style="display:none"></sp-progress-bar>
+            <p id="transcribeStatus"></p>
+        </section>
+
+        <hr>
+        
+        <!-- Section 3: Résultat -->
+        <section>
+            <h2>3. Résultat</h2>
+            <sp-textfield id="srtResult" multiline rows="10" quiet readonly></sp-textfield>
+            <sp-button id="downloadBtn" disabled>Télécharger SRT</sp-button>
+        </section>
+    </div>
+</body>
+</html>

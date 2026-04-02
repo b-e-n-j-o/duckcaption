@@ -1,0 +1,20 @@
+{
+  "id": "com.duckmotion.transcription",
+  "name": "Duckmotion Transcription",
+  "version": "1.0.0",
+  "main": "index.html",
+  "manifestVersion": 5,
+  "host": {
+    "app": "premierepro",
+    "minVersion": "25.0"
+  },
+  "entrypoints": [
+    {
+      "type": "panel",
+      "id": "transcriptionPanel",
+      "label": {
+        "default": "Duckmotion"
+      }
+    }
+  ]
+}
