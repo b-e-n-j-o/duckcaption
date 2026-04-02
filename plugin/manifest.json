@@ -8,6 +8,16 @@
     "app": "premierepro",
     "minVersion": "25.0"
   },
+  "requiredPermissions": {
+    "network": {
+      "domains": ["https://backend-duckcaption.onrender.com"]
+    },
+    "localFileSystem": "fullAccess",
+    "launchProcess": {
+      "schemes": ["file", "http", "https"],
+      "extensions": ["wav", "mp3", "mp4", "mov"]
+    }
+  },
   "entrypoints": [
     {
       "type": "panel",
