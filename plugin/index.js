@@ -60,47 +60,57 @@ async function transcribe() {
     const status = document.getElementById('transcribeStatus');
     const progressBar = document.getElementById('progressBar');
     const context = document.getElementById('contextInput').value;
-    
+
     try {
-        status.textContent = '⏳ Upload...';
+        status.textContent = '⏳ Lecture du fichier...';
         progressBar.style.display = 'block';
-        
-        // Lire le fichier audio
+
+        // Lire le fichier avec le bon format
         const fs = require('uxp').storage.localFileSystem;
         const audioFile = await fs.getEntryWithUrl(exportedAudioPath);
-        const arrayBuffer = await audioFile.read({ format: 'binary' });
-        
+        const arrayBuffer = await audioFile.read({ format: require('uxp').storage.formats.binary });
+
+        status.textContent = '⏳ Upload...';
+
         // Upload vers backend
+        const blob = new Blob([arrayBuffer]);
         const formData = new FormData();
-        formData.append('file', new Blob([arrayBuffer]), 'audio.wav');
-        
+        formData.append('file', blob, audioFile.name);
+
         const uploadRes = await fetch(`${BACKEND_URL}/transcription/upload`, {
             method: 'POST',
             body: formData
         });
-        
+
+        if (!uploadRes.ok) {
+            throw new Error(`Upload failed: ${uploadRes.status}`);
+        }
+
         const uploadData = await uploadRes.json();
         currentJobId = uploadData.job_id;
-        
+
         status.textContent = '⏳ Transcription en cours...';
-        
+
         // Générer SRT
         const srtRes = await fetch(
             `${BACKEND_URL}/transcription/generate_srt/${currentJobId}?context=${encodeURIComponent(context)}&engine=scribe_v2`,
             { method: 'POST' }
         );
-        
+
+        if (!srtRes.ok) {
+            throw new Error(`Transcription failed: ${srtRes.status}`);
+        }
+
         const srtData = await srtRes.json();
-        
+
         // Récupérer le contenu SRT
         const srtContent = await fetch(srtData.srt_url).then(r => r.text());
-        
+
         document.getElementById('srtResult').value = srtContent;
         document.getElementById('downloadBtn').disabled = false;
-        
+
         status.textContent = '✅ Transcription terminée !';
         progressBar.style.display = 'none';
-        
     } catch (error) {
         status.textContent = '❌ Erreur: ' + error.message;
         progressBar.style.display = 'none';
