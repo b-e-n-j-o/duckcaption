@@ -138,9 +138,51 @@ function renderTranslatedSRTs() {
     });
 }
 
+/**
+ * UXP n’expose pas toujours TextDecoder ; on lit en utf8 natif ou on décode le binaire à la main.
+ */
+function utf8BytesToString(bytes) {
+    if (typeof TextDecoder !== 'undefined') {
+        return new TextDecoder('utf-8').decode(bytes);
+    }
+    const u8 = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+    let out = '';
+    let i = 0;
+    const len = u8.length;
+    while (i < len) {
+        const c = u8[i++];
+        if (c < 0x80) {
+            out += String.fromCharCode(c);
+        } else if (c < 0xe0 && i < len) {
+            out += String.fromCharCode(((c & 0x1f) << 6) | (u8[i++] & 0x3f));
+        } else if (c < 0xf0 && i + 1 < len) {
+            const c2 = ((c & 0x0f) << 12) | ((u8[i++] & 0x3f) << 6) | (u8[i++] & 0x3f);
+            out += String.fromCharCode(c2);
+        } else if (i + 2 < len) {
+            let u =
+                ((c & 0x07) << 18) |
+                ((u8[i++] & 0x3f) << 12) |
+                ((u8[i++] & 0x3f) << 6) |
+                (u8[i++] & 0x3f);
+            u -= 0x10000;
+            out += String.fromCharCode(0xd800 + (u >> 10), 0xdc00 + (u & 0x3ff));
+        }
+    }
+    return out;
+}
+
 async function readFileAsUtf8(file) {
-    const buf = await file.read({ format: require('uxp').storage.formats.binary });
-    return new TextDecoder('utf-8').decode(buf);
+    const formats = require('uxp').storage.formats;
+    if (formats.utf8 != null) {
+        try {
+            const text = await file.read({ format: formats.utf8 });
+            if (typeof text === 'string') return text;
+        } catch (e) {
+            console.warn('Lecture utf8 UXP échouée, repli binaire :', e);
+        }
+    }
+    const buf = await file.read({ format: formats.binary });
+    return utf8BytesToString(buf);
 }
 
 async function refreshBackendStatus() {
