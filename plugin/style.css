@@ -181,30 +181,56 @@ sp-progress-bar {
     margin-bottom: 12px;
 }
 
-.lang-checkbox {
+/* Boutons natifs : fiables dans UXP (les checkboxes / sp-button peuvent ignorer les clics) */
+.lang-toggle {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 10px;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 12px;
     border: 1px solid #444;
     border-radius: 6px;
     cursor: pointer;
     font-size: 13px;
+    font-family: inherit;
     color: #ddd;
     background: #2a2a2a;
+    text-align: center;
 }
 
-.lang-checkbox:hover {
+.lang-toggle:hover {
     border-color: #666;
+    background: #333;
 }
 
-.lang-checkbox input {
-    accent-color: #ffb347;
-}
-
-.lang-checkbox input:checked + span {
+.lang-toggle--selected {
+    border-color: #ffb347;
     color: #ffb347;
     font-weight: 600;
+    background: #2e2618;
+    box-shadow: 0 0 0 1px rgba(255, 179, 71, 0.35);
+}
+
+.btn-translate {
+    display: inline-block;
+    margin: 10px 0;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-family: inherit;
+    font-weight: 600;
+    color: #1e1e1e;
+    background: #ffb347;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.btn-translate:hover {
+    filter: brightness(1.08);
+}
+
+.btn-translate:active {
+    filter: brightness(0.95);
 }
 
 .srt-editor--translated {

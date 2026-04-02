@@ -57,29 +57,14 @@
 
         <section id="translationSection" style="display:none;">
             <h2>4. Traduction</h2>
-            <div class="language-grid">
-                <label class="lang-checkbox">
-                    <input type="checkbox" value="en">
-                    <span>🇬🇧 Anglais</span>
-                </label>
-                <label class="lang-checkbox">
-                    <input type="checkbox" value="nl">
-                    <span>🇳🇱 Néerlandais</span>
-                </label>
-                <label class="lang-checkbox">
-                    <input type="checkbox" value="es">
-                    <span>🇪🇸 Espagnol</span>
-                </label>
-                <label class="lang-checkbox">
-                    <input type="checkbox" value="de">
-                    <span>🇩🇪 Allemand</span>
-                </label>
-                <label class="lang-checkbox">
-                    <input type="checkbox" value="fr">
-                    <span>🇫🇷 Français</span>
-                </label>
+            <div class="language-grid" id="languageGrid" role="group" aria-label="Langues cibles">
+                <button type="button" class="lang-toggle" data-lang="en" aria-pressed="false">🇬🇧 Anglais</button>
+                <button type="button" class="lang-toggle" data-lang="nl" aria-pressed="false">🇳🇱 Néerlandais</button>
+                <button type="button" class="lang-toggle" data-lang="es" aria-pressed="false">🇪🇸 Espagnol</button>
+                <button type="button" class="lang-toggle" data-lang="de" aria-pressed="false">🇩🇪 Allemand</button>
+                <button type="button" class="lang-toggle" data-lang="fr" aria-pressed="false">🇫🇷 Français</button>
             </div>
-            <sp-button id="translateBtn">Traduire</sp-button>
+            <button type="button" id="translateBtn" class="btn-translate">Traduire</button>
             <p id="translationStatus"></p>
         </section>
 

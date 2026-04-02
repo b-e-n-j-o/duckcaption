@@ -207,11 +207,26 @@ async function refreshBackendStatus() {
 function resetTranslationUi() {
     translatedSegments = {};
     document.getElementById('translatedSRTsContainer').innerHTML = '';
-    document.querySelectorAll('.lang-checkbox input').forEach((cb) => {
-        cb.checked = false;
+    document.querySelectorAll('.lang-toggle').forEach((btn) => {
+        btn.classList.remove('lang-toggle--selected');
+        btn.setAttribute('aria-pressed', 'false');
     });
     const ts = document.getElementById('translationStatus');
     if (ts) ts.textContent = '';
+}
+
+function getSelectedTargetLanguages() {
+    return Array.from(document.querySelectorAll('.lang-toggle.lang-toggle--selected')).map((b) => b.dataset.lang);
+}
+
+function wireLanguageToggles() {
+    document.querySelectorAll('.lang-toggle').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const on = !btn.classList.contains('lang-toggle--selected');
+            btn.classList.toggle('lang-toggle--selected', on);
+            btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
+    });
 }
 
 function showEditorWithSegments(segments, showTranslation) {
@@ -234,6 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('downloadOriginalBtn').addEventListener('click', () => {
         saveSrtToDisk(serializeSrt(srtSegments), `${sourceAudioBaseName}.srt`);
     });
+    wireLanguageToggles();
     document.getElementById('translateBtn').addEventListener('click', translateSRT);
 
     const maxWordsSlider = document.getElementById('maxWordsSlider');
@@ -412,10 +428,15 @@ async function transcribe() {
 }
 
 async function translateSRT() {
-    const selectedLangs = Array.from(document.querySelectorAll('.lang-checkbox input:checked')).map((cb) => cb.value);
+    const selectedLangs = getSelectedTargetLanguages();
 
     if (selectedLangs.length === 0) {
-        alert('Sélectionnez au moins une langue');
+        alert('Sélectionnez au moins une langue (cliquez sur une ou plusieurs langues).');
+        return;
+    }
+
+    if (!srtSegments || srtSegments.length === 0) {
+        alert('Aucun sous-titre à traduire. Importez un SRT ou lancez une transcription.');
         return;
     }
 
