@@ -10,13 +10,17 @@
   },
   "requiredPermissions": {
     "network": {
-      "domains": ["https://backend-duckcaption.onrender.com"]
+      "domains": [
+        "https://backend-duckcaption.onrender.com",
+        "https://*.supabase.co"
+      ]
     },
     "localFileSystem": "fullAccess",
     "launchProcess": {
-      "schemes": ["file", "http", "https"],
-      "extensions": ["wav", "mp3", "mp4", "mov"]
-    }
+      "schemes": ["http", "https", "file"],
+      "extensions": ["wav", "mp3", "mp4", "mov", "srt"]
+    },
+    "clipboard": "readAndWrite"
   },
   "entrypoints": [
     {
