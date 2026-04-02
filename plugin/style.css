@@ -74,10 +74,23 @@ sp-progress-bar {
 }
 
 #fileStatus,
-#transcribeStatus {
+#transcribeStatus,
+#translationStatus {
     font-size: 12px;
     color: #aaa;
     margin-top: 5px;
+}
+
+.button-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.button-group sp-button {
+    margin: 0;
 }
 
 .slider-group {
@@ -152,4 +165,71 @@ sp-progress-bar {
     color: #e8e8e8;
     resize: vertical;
     box-sizing: border-box;
+}
+
+.time-display {
+    flex: 1;
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+    color: #999;
+}
+
+.language-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.lang-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid #444;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #ddd;
+    background: #2a2a2a;
+}
+
+.lang-checkbox:hover {
+    border-color: #666;
+}
+
+.lang-checkbox input {
+    accent-color: #ffb347;
+}
+
+.lang-checkbox input:checked + span {
+    color: #ffb347;
+    font-weight: 600;
+}
+
+.srt-editor--translated {
+    max-height: 220px;
+}
+
+.translated-section {
+    margin-top: 20px;
+    padding: 14px;
+    border: 1px solid #3a3a3a;
+    border-radius: 8px;
+    background: #222;
+}
+
+.translated-section h3 {
+    margin: 0 0 10px 0;
+    font-size: 15px;
+    color: #ccc;
+    font-weight: 600;
+}
+
+.translated-section sp-button {
+    margin-top: 10px;
+}
+
+#translatedSRTsContainer {
+    margin-top: 8px;
 }

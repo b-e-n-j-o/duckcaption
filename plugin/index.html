@@ -14,15 +14,18 @@
         <hr>
 
         <section>
-            <h2>1. Sélectionner l'audio</h2>
-            <sp-button id="importFileBtn">Importer un fichier audio</sp-button>
+            <h2>1. Sélectionner</h2>
+            <div class="button-group">
+                <sp-button id="importAudioBtn">Importer audio</sp-button>
+                <sp-button id="importSRTBtn">Importer SRT</sp-button>
+            </div>
             <p id="fileStatus"></p>
         </section>
 
         <hr>
 
-        <section>
-            <h2>2. Options &amp; transcription</h2>
+        <section id="transcriptionOptions">
+            <h2>2. Options transcription</h2>
             <div class="slider-group">
                 <label>Mots max : <strong id="maxWordsValue">5</strong></label>
                 <input type="range" id="maxWordsSlider" min="1" max="20" value="5">
@@ -32,10 +35,11 @@
                 <input type="range" id="maxCharsSlider" min="10" max="80" value="24">
             </div>
             <div class="slider-group">
-                <label>Caractères max / ligne : <strong id="maxCharsPerLineValue">42</strong></label>
-                <input type="range" id="maxCharsPerLineSlider" min="20" max="80" value="42">
+                <label>Caractères / ligne : <strong id="maxCharsPerLineValue">42</strong></label>
+                <input type="range" id="maxCharsPerLineSlider" min="5" max="50" value="42">
             </div>
             <sp-textfield id="contextInput" placeholder="Contexte (optionnel)" quiet></sp-textfield>
+            <sp-textfield id="keytermsInput" placeholder="Termes clés (séparés par virgules, optionnel)" quiet></sp-textfield>
             <sp-button id="transcribeBtn" disabled>Lancer transcription</sp-button>
             <sp-progress-bar id="progressBar" style="display:none"></sp-progress-bar>
             <p id="transcribeStatus"></p>
@@ -46,8 +50,40 @@
         <section id="editorSection" style="display:none;">
             <h2>3. Sous-titres</h2>
             <div id="srtEditorContainer" class="srt-editor"></div>
-            <sp-button id="downloadBtn" disabled>Télécharger SRT</sp-button>
+            <sp-button id="downloadOriginalBtn" disabled>Télécharger SRT</sp-button>
         </section>
+
+        <hr>
+
+        <section id="translationSection" style="display:none;">
+            <h2>4. Traduction</h2>
+            <div class="language-grid">
+                <label class="lang-checkbox">
+                    <input type="checkbox" value="en">
+                    <span>🇬🇧 Anglais</span>
+                </label>
+                <label class="lang-checkbox">
+                    <input type="checkbox" value="nl">
+                    <span>🇳🇱 Néerlandais</span>
+                </label>
+                <label class="lang-checkbox">
+                    <input type="checkbox" value="es">
+                    <span>🇪🇸 Espagnol</span>
+                </label>
+                <label class="lang-checkbox">
+                    <input type="checkbox" value="de">
+                    <span>🇩🇪 Allemand</span>
+                </label>
+                <label class="lang-checkbox">
+                    <input type="checkbox" value="fr">
+                    <span>🇫🇷 Français</span>
+                </label>
+            </div>
+            <sp-button id="translateBtn">Traduire</sp-button>
+            <p id="translationStatus"></p>
+        </section>
+
+        <div id="translatedSRTsContainer"></div>
     </div>
 </body>
 </html>

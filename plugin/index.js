@@ -1,8 +1,26 @@
 const BACKEND_URL = 'https://backend-duckcaption.onrender.com/api';
 let currentJobId = null;
 let exportedAudioPath = null;
-/** Nom du fichier SRT exporté : `<base>.srt` (même base que l’audio importé) */
 let sourceAudioBaseName = 'subtitles';
+
+/** Segments SRT source éditables : { time, text } */
+let srtSegments = [];
+/** { lang: Array<{ time, text }> } */
+let translatedSegments = {};
+
+let maxWords = 5;
+let maxChars = 24;
+let maxCharsPerLine = 42;
+
+const LANG_LABELS = {
+    en: '🇬🇧 Anglais',
+    nl: '🇳🇱 Néerlandais',
+    es: '🇪🇸 Espagnol',
+    de: '🇩🇪 Allemand',
+    fr: '🇫🇷 Français'
+};
+
+const BACKEND_STATUS_INTERVAL_MS = 45000;
 
 function basenameWithoutExt(filename) {
     if (!filename || typeof filename !== 'string') return 'subtitles';
@@ -10,13 +28,6 @@ function basenameWithoutExt(filename) {
     const base = i > 0 ? filename.slice(0, i) : filename;
     return base.trim() || 'subtitles';
 }
-
-/** Segments SRT éditables : { time, text } */
-let srtSegments = [];
-
-let maxWords = 5;
-let maxChars = 24;
-let maxCharsPerLine = 42;
 
 function escapeHtml(str) {
     return String(str)
@@ -47,9 +58,7 @@ function parseSrt(content) {
 }
 
 function serializeSrt(segments) {
-    return segments
-        .map((seg, idx) => `${idx + 1}\n${seg.time}\n${seg.text}\n`)
-        .join('\n');
+    return segments.map((seg, idx) => `${idx + 1}\n${seg.time}\n${seg.text}\n`).join('\n');
 }
 
 function renderSRTEditor(segments) {
@@ -82,7 +91,57 @@ function renderSRTEditor(segments) {
     });
 }
 
-const BACKEND_STATUS_INTERVAL_MS = 45000;
+function renderTranslatedSRTs() {
+    const container = document.getElementById('translatedSRTsContainer');
+    container.innerHTML = Object.entries(translatedSegments)
+        .map(([lang, segs]) => {
+            const title = LANG_LABELS[lang] || lang;
+            return `
+        <section class="translated-section">
+            <h3>Traduction — ${title}</h3>
+            <div class="srt-editor srt-editor--translated" data-lang="${escapeHtml(lang)}">
+                ${segs
+                    .map(
+                        (seg, idx) => `
+                    <div class="srt-segment">
+                        <div class="segment-header">
+                            <span class="segment-number">#${idx + 1}</span>
+                            <span class="time-display">${escapeHtml(seg.time)}</span>
+                        </div>
+                        <textarea class="text-input text-input-translated" data-lang="${escapeHtml(lang)}" data-idx="${idx}">${escapeHtml(seg.text)}</textarea>
+                    </div>`
+                    )
+                    .join('')}
+            </div>
+            <sp-button class="download-translated-btn" data-lang="${escapeHtml(lang)}">Télécharger (${title})</sp-button>
+        </section>`;
+        })
+        .join('');
+
+    container.querySelectorAll('.text-input-translated').forEach((textarea) => {
+        textarea.addEventListener('input', (e) => {
+            const lang = e.target.dataset.lang;
+            const idx = parseInt(e.target.dataset.idx, 10);
+            if (translatedSegments[lang] && translatedSegments[lang][idx]) {
+                translatedSegments[lang][idx].text = e.target.value;
+            }
+        });
+    });
+
+    container.querySelectorAll('.download-translated-btn').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+            const lang = e.currentTarget.getAttribute('data-lang');
+            if (!lang || !translatedSegments[lang]) return;
+            const outName = `${sourceAudioBaseName}_${lang}.srt`;
+            saveSrtToDisk(serializeSrt(translatedSegments[lang]), outName);
+        });
+    });
+}
+
+async function readFileAsUtf8(file) {
+    const buf = await file.read({ format: require('uxp').storage.formats.binary });
+    return new TextDecoder('utf-8').decode(buf);
+}
 
 async function refreshBackendStatus() {
     const el = document.getElementById('backendLed');
@@ -103,13 +162,37 @@ async function refreshBackendStatus() {
     }
 }
 
+function resetTranslationUi() {
+    translatedSegments = {};
+    document.getElementById('translatedSRTsContainer').innerHTML = '';
+    document.querySelectorAll('.lang-checkbox input').forEach((cb) => {
+        cb.checked = false;
+    });
+    const ts = document.getElementById('translationStatus');
+    if (ts) ts.textContent = '';
+}
+
+function showEditorWithSegments(segments, showTranslation) {
+    srtSegments = segments;
+    document.getElementById('editorSection').style.display = 'block';
+    document.getElementById('downloadOriginalBtn').disabled = segments.length === 0;
+    renderSRTEditor(srtSegments);
+    if (showTranslation) {
+        document.getElementById('translationSection').style.display = 'block';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     refreshBackendStatus();
     setInterval(refreshBackendStatus, BACKEND_STATUS_INTERVAL_MS);
 
-    document.getElementById('importFileBtn').addEventListener('click', importAudioFile);
+    document.getElementById('importAudioBtn').addEventListener('click', importAudioFile);
+    document.getElementById('importSRTBtn').addEventListener('click', importSRTFile);
     document.getElementById('transcribeBtn').addEventListener('click', transcribe);
-    document.getElementById('downloadBtn').addEventListener('click', downloadSRT);
+    document.getElementById('downloadOriginalBtn').addEventListener('click', () => {
+        saveSrtToDisk(serializeSrt(srtSegments), `${sourceAudioBaseName}.srt`);
+    });
+    document.getElementById('translateBtn').addEventListener('click', translateSRT);
 
     const maxWordsSlider = document.getElementById('maxWordsSlider');
     const maxCharsSlider = document.getElementById('maxCharsSlider');
@@ -146,8 +229,51 @@ async function importAudioFile() {
         exportedAudioPath = file.nativePath;
         sourceAudioBaseName = basenameWithoutExt(file.name);
 
-        status.textContent = `✅ Fichier chargé : ${file.name}`;
+        document.getElementById('transcriptionOptions').style.display = 'block';
         document.getElementById('transcribeBtn').disabled = false;
+        document.getElementById('editorSection').style.display = 'none';
+        document.getElementById('translationSection').style.display = 'none';
+        resetTranslationUi();
+
+        status.textContent = `✅ Audio chargé : ${file.name}`;
+    } catch (error) {
+        status.textContent = '❌ Erreur : ' + error.message;
+        console.error(error);
+    }
+}
+
+async function importSRTFile() {
+    const fs = require('uxp').storage.localFileSystem;
+    const status = document.getElementById('fileStatus');
+
+    try {
+        const file = await fs.getFileForOpening({
+            types: ['srt']
+        });
+
+        if (!file) {
+            status.textContent = '❌ Aucun fichier sélectionné';
+            return;
+        }
+
+        const srtContent = await readFileAsUtf8(file);
+        sourceAudioBaseName = basenameWithoutExt(file.name);
+
+        const parsed = parseSrt(srtContent);
+        if (parsed.length === 0) {
+            status.textContent = '❌ SRT non reconnu (format attendu : index, temps, texte)';
+            return;
+        }
+
+        exportedAudioPath = null;
+        currentJobId = null;
+        document.getElementById('transcriptionOptions').style.display = 'none';
+        document.getElementById('transcribeBtn').disabled = true;
+
+        resetTranslationUi();
+        showEditorWithSegments(parsed, true);
+
+        status.textContent = `✅ SRT chargé : ${file.name} (${parsed.length} segments)`;
     } catch (error) {
         status.textContent = '❌ Erreur : ' + error.message;
         console.error(error);
@@ -158,6 +284,7 @@ async function transcribe() {
     const status = document.getElementById('transcribeStatus');
     const progressBar = document.getElementById('progressBar');
     const context = document.getElementById('contextInput').value;
+    const keyterms = document.getElementById('keytermsInput').value.trim();
 
     try {
         status.textContent = '⏳ Lecture du fichier...';
@@ -210,6 +337,7 @@ async function transcribe() {
             max_chars: String(maxChars),
             max_chars_per_line: String(maxCharsPerLine)
         });
+        if (keyterms) qs.set('keyterms', keyterms);
 
         const srtRes = await fetch(
             `${BACKEND_URL}/transcription/generate_srt/${currentJobId}?${qs.toString()}`,
@@ -224,14 +352,13 @@ async function transcribe() {
         const srtData = await srtRes.json();
         const srtContent = await fetch(srtData.srt_url).then((r) => r.text());
 
-        srtSegments = parseSrt(srtContent);
-        if (srtSegments.length === 0) {
-            srtSegments = [{ time: '00:00:00,000 --> 00:00:01,000', text: srtContent.trim() }];
+        let parsed = parseSrt(srtContent);
+        if (parsed.length === 0) {
+            parsed = [{ time: '00:00:00,000 --> 00:00:01,000', text: srtContent.trim() }];
         }
 
-        document.getElementById('editorSection').style.display = 'block';
-        renderSRTEditor(srtSegments);
-        document.getElementById('downloadBtn').disabled = false;
+        resetTranslationUi();
+        showEditorWithSegments(parsed, true);
 
         status.textContent = '✅ Transcription terminée !';
         progressBar.style.display = 'none';
@@ -242,20 +369,67 @@ async function transcribe() {
     }
 }
 
-async function downloadSRT() {
+async function translateSRT() {
+    const selectedLangs = Array.from(document.querySelectorAll('.lang-checkbox input:checked')).map((cb) => cb.value);
+
+    if (selectedLangs.length === 0) {
+        alert('Sélectionnez au moins une langue');
+        return;
+    }
+
+    const status = document.getElementById('translationStatus');
+    status.textContent = '🌍 Traduction en cours...';
+
+    try {
+        const srtContent = serializeSrt(srtSegments);
+
+        const response = await fetch(`${BACKEND_URL}/transcription/translate_srt_content`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                srt: srtContent,
+                languages: selectedLangs,
+                method: 'strict',
+                max_words: maxWords,
+                max_chars: maxChars
+            })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Traduction (${response.status}): ${errorText}`);
+        }
+
+        const data = await response.json();
+        translatedSegments = {};
+
+        for (const [lang, srtText] of Object.entries(data.translations || {})) {
+            let segs = parseSrt(srtText);
+            if (segs.length === 0 && String(srtText).trim()) {
+                segs = [{ time: '00:00:00,000 --> 00:00:01,000', text: String(srtText).trim() }];
+            }
+            translatedSegments[lang] = segs;
+        }
+
+        renderTranslatedSRTs();
+        status.textContent = '✅ Traduction terminée !';
+    } catch (error) {
+        status.textContent = '❌ Erreur: ' + error.message;
+        console.error(error);
+    }
+}
+
+async function saveSrtToDisk(srtContent, filename) {
     const fs = require('uxp').storage.localFileSystem;
-    const srtContent = serializeSrt(srtSegments);
 
     try {
         const folder = await fs.getFolder();
-        const outName = `${sourceAudioBaseName}.srt`;
-        const file = await folder.createFile(outName, { overwrite: true });
+        const file = await folder.createFile(filename, { overwrite: true });
         await file.write(srtContent);
-
-        alert(`✅ SRT sauvegardé : ${outName}`);
+        alert(`✅ Fichier sauvegardé : ${filename}`);
     } catch (error) {
         alert('❌ Erreur: ' + error.message);
     }
 }
 
-console.log('🦆 Duckmotion Transcription chargé');
+console.log('🦆 Duck Caption chargé');
