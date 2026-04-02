@@ -29,6 +29,23 @@ function basenameWithoutExt(filename) {
     return base.trim() || 'subtitles';
 }
 
+/** Nom de fichier sûr pour l’export (évite chemins / caractères interdits) */
+function sanitizeFilename(name) {
+    let s = String(name || '').trim();
+    s = s.replace(/[/\\?*:|"<>]/g, '_').replace(/\s+/g, ' ');
+    if (!s) return 'subtitles.srt';
+    if (!/\.srt$/i.test(s)) s += '.srt';
+    return s;
+}
+
+function defaultOriginalSrtFilename() {
+    return `${sourceAudioBaseName}.srt`;
+}
+
+function defaultTranslatedSrtFilename(lang) {
+    return `${sourceAudioBaseName}_${lang}.srt`;
+}
+
 function escapeHtml(str) {
     return String(str)
         .replace(/&/g, '&amp;')
@@ -93,9 +110,17 @@ function renderSRTEditor(segments) {
 
 function renderTranslatedSRTs() {
     const container = document.getElementById('translatedSRTsContainer');
+    const preservedNames = {};
+    container.querySelectorAll('.filename-input--translated').forEach((inp) => {
+        const lg = inp.dataset.lang;
+        if (lg && inp.value) preservedNames[lg] = inp.value;
+    });
+
     container.innerHTML = Object.entries(translatedSegments)
         .map(([lang, segs]) => {
             const title = LANG_LABELS[lang] || lang;
+            const defaultName = defaultTranslatedSrtFilename(lang);
+            const filenameValue = preservedNames[lang] != null ? preservedNames[lang] : defaultName;
             return `
         <section class="translated-section">
             <h3>Traduction — ${title}</h3>
@@ -112,6 +137,10 @@ function renderTranslatedSRTs() {
                     </div>`
                     )
                     .join('')}
+            </div>
+            <div class="download-filename-row">
+                <label class="filename-label" for="downloadFilename-${escapeHtml(lang)}">Nom du fichier</label>
+                <input type="text" id="downloadFilename-${escapeHtml(lang)}" class="filename-input filename-input--translated" data-lang="${escapeHtml(lang)}" autocomplete="off" spellcheck="false" value="${escapeHtml(filenameValue)}">
             </div>
             <button type="button" class="btn-download-translated" data-lang="${escapeHtml(lang)}">Télécharger (${title})</button>
         </section>`;
@@ -132,7 +161,10 @@ function renderTranslatedSRTs() {
         btn.addEventListener('click', (e) => {
             const lang = e.currentTarget.getAttribute('data-lang');
             if (!lang || !translatedSegments[lang]) return;
-            const outName = `${sourceAudioBaseName}_${lang}.srt`;
+            const section = e.currentTarget.closest('.translated-section');
+            const inp = section ? section.querySelector('.filename-input--translated') : null;
+            const raw = inp ? inp.value : defaultTranslatedSrtFilename(lang);
+            const outName = sanitizeFilename(raw);
             saveSrtToDisk(serializeSrt(translatedSegments[lang]), outName);
         });
     });
@@ -224,6 +256,8 @@ function showEditorWithSegments(segments, showTranslation) {
     srtSegments = segments;
     document.getElementById('editorSection').style.display = 'block';
     document.getElementById('downloadOriginalBtn').disabled = segments.length === 0;
+    const fnInput = document.getElementById('downloadOriginalFilename');
+    if (fnInput) fnInput.value = defaultOriginalSrtFilename();
     renderSRTEditor(srtSegments);
     if (showTranslation) {
         document.getElementById('translationSection').style.display = 'block';
@@ -241,7 +275,9 @@ function initPlugin() {
     document.getElementById('importSRTBtn').addEventListener('click', importSRTFile);
     document.getElementById('transcribeBtn').addEventListener('click', transcribe);
     document.getElementById('downloadOriginalBtn').addEventListener('click', () => {
-        saveSrtToDisk(serializeSrt(srtSegments), `${sourceAudioBaseName}.srt`);
+        const inp = document.getElementById('downloadOriginalFilename');
+        const raw = inp ? inp.value : defaultOriginalSrtFilename();
+        saveSrtToDisk(serializeSrt(srtSegments), sanitizeFilename(raw));
     });
     wireLanguageTranslateButtons();
 
