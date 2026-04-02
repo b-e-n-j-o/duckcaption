@@ -5,10 +5,42 @@ body {
     font-family: Adobe Clean, sans-serif;
 }
 
+.header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
 h1 {
     color: #ffb347;
     font-size: 20px;
-    margin-bottom: 20px;
+    margin: 0;
+    flex: 1;
+}
+
+.backend-led {
+    flex-shrink: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    box-shadow: 0 0 6px currentColor;
+}
+
+.backend-led--pending {
+    background: #666;
+    color: #666;
+}
+
+.backend-led--online {
+    background: #3dcc6a;
+    color: #3dcc6a;
+}
+
+.backend-led--offline {
+    background: #e34850;
+    color: #e34850;
 }
 
 h2 {
@@ -41,7 +73,6 @@ sp-progress-bar {
     margin: 10px 0;
 }
 
-#backendStatus,
 #fileStatus,
 #transcribeStatus {
     font-size: 12px;

@@ -7,13 +7,10 @@
 </head>
 <body>
     <div class="container">
-        <h1>🦆 Duckmotion Transcription</h1>
-
-        <section>
-            <h2>🔌 Connexion Backend</h2>
-            <sp-button id="testBackendBtn">Tester le backend</sp-button>
-            <p id="backendStatus"></p>
-        </section>
+        <header class="header-row">
+            <h1>🦆 Duck Caption</h1>
+            <span id="backendLed" class="backend-led backend-led--pending" title="Vérification du serveur…" role="status" aria-live="polite"></span>
+        </header>
         <hr>
 
         <section>

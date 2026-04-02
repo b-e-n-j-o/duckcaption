@@ -1,6 +1,15 @@
 const BACKEND_URL = 'https://backend-duckcaption.onrender.com/api';
 let currentJobId = null;
 let exportedAudioPath = null;
+/** Nom du fichier SRT exporté : `<base>.srt` (même base que l’audio importé) */
+let sourceAudioBaseName = 'subtitles';
+
+function basenameWithoutExt(filename) {
+    if (!filename || typeof filename !== 'string') return 'subtitles';
+    const i = filename.lastIndexOf('.');
+    const base = i > 0 ? filename.slice(0, i) : filename;
+    return base.trim() || 'subtitles';
+}
 
 /** Segments SRT éditables : { time, text } */
 let srtSegments = [];
@@ -73,8 +82,31 @@ function renderSRTEditor(segments) {
     });
 }
 
+const BACKEND_STATUS_INTERVAL_MS = 45000;
+
+async function refreshBackendStatus() {
+    const el = document.getElementById('backendLed');
+    if (!el) return;
+
+    try {
+        const response = await fetch(`${BACKEND_URL}/health`, { method: 'GET' });
+        if (response.ok) {
+            el.className = 'backend-led backend-led--online';
+            el.title = 'Backend connecté';
+        } else {
+            el.className = 'backend-led backend-led--offline';
+            el.title = `Serveur indisponible (HTTP ${response.status})`;
+        }
+    } catch (e) {
+        el.className = 'backend-led backend-led--offline';
+        el.title = 'Backend inaccessible';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('testBackendBtn').addEventListener('click', testBackend);
+    refreshBackendStatus();
+    setInterval(refreshBackendStatus, BACKEND_STATUS_INTERVAL_MS);
+
     document.getElementById('importFileBtn').addEventListener('click', importAudioFile);
     document.getElementById('transcribeBtn').addEventListener('click', transcribe);
     document.getElementById('downloadBtn').addEventListener('click', downloadSRT);
@@ -97,26 +129,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-async function testBackend() {
-    const status = document.getElementById('backendStatus');
-
-    try {
-        status.textContent = '⏳ Test en cours...';
-
-        const response = await fetch(`${BACKEND_URL}/health`, {
-            method: 'GET'
-        });
-
-        if (response.ok) {
-            status.textContent = '✅ Backend accessible !';
-        } else {
-            status.textContent = `⚠️ Backend répondu avec status ${response.status}`;
-        }
-    } catch (error) {
-        status.textContent = '❌ Backend inaccessible : ' + error.message;
-    }
-}
-
 async function importAudioFile() {
     const fs = require('uxp').storage.localFileSystem;
     const status = document.getElementById('fileStatus');
@@ -132,6 +144,7 @@ async function importAudioFile() {
         }
 
         exportedAudioPath = file.nativePath;
+        sourceAudioBaseName = basenameWithoutExt(file.name);
 
         status.textContent = `✅ Fichier chargé : ${file.name}`;
         document.getElementById('transcribeBtn').disabled = false;
@@ -152,6 +165,7 @@ async function transcribe() {
 
         const fs = require('uxp').storage.localFileSystem;
         const audioFile = await fs.getEntryWithUrl(exportedAudioPath);
+        sourceAudioBaseName = basenameWithoutExt(audioFile.name);
         const arrayBuffer = await audioFile.read({ format: require('uxp').storage.formats.binary });
 
         status.textContent = '⏳ Upload...';
@@ -234,10 +248,11 @@ async function downloadSRT() {
 
     try {
         const folder = await fs.getFolder();
-        const file = await folder.createFile('subtitles.srt', { overwrite: true });
+        const outName = `${sourceAudioBaseName}.srt`;
+        const file = await folder.createFile(outName, { overwrite: true });
         await file.write(srtContent);
 
-        alert('✅ SRT sauvegardé !');
+        alert(`✅ SRT sauvegardé : ${outName}`);
     } catch (error) {
         alert('❌ Erreur: ' + error.message);
     }
