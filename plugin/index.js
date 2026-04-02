@@ -65,25 +65,33 @@ async function transcribe() {
         status.textContent = '⏳ Lecture du fichier...';
         progressBar.style.display = 'block';
 
-        // Lire le fichier avec le bon format
         const fs = require('uxp').storage.localFileSystem;
         const audioFile = await fs.getEntryWithUrl(exportedAudioPath);
         const arrayBuffer = await audioFile.read({ format: require('uxp').storage.formats.binary });
 
         status.textContent = '⏳ Upload...';
 
-        // Upload vers backend
-        const blob = new Blob([arrayBuffer]);
+        // Créer un Blob avec le bon type MIME
+        const mimeType = audioFile.name.endsWith('.mp3') ? 'audio/mpeg' :
+            audioFile.name.endsWith('.wav') ? 'audio/wav' :
+                audioFile.name.endsWith('.mp4') ? 'video/mp4' :
+                    'audio/mpeg'; // Par défaut
+
+        const blob = new Blob([arrayBuffer], { type: mimeType });
         const formData = new FormData();
+
+        // IMPORTANT : Ajouter le blob avec nom de fichier ET type
         formData.append('file', blob, audioFile.name);
 
         const uploadRes = await fetch(`${BACKEND_URL}/transcription/upload`, {
             method: 'POST',
             body: formData
+            // Ne PAS ajouter de Content-Type header, FormData le gère
         });
 
         if (!uploadRes.ok) {
-            throw new Error(`Upload failed: ${uploadRes.status}`);
+            const errorText = await uploadRes.text();
+            throw new Error(`Upload failed (${uploadRes.status}): ${errorText}`);
         }
 
         const uploadData = await uploadRes.json();
@@ -98,7 +106,8 @@ async function transcribe() {
         );
 
         if (!srtRes.ok) {
-            throw new Error(`Transcription failed: ${srtRes.status}`);
+            const errorText = await srtRes.text();
+            throw new Error(`Transcription failed (${srtRes.status}): ${errorText}`);
         }
 
         const srtData = await srtRes.json();
