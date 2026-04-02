@@ -1,4 +1,4 @@
-const BACKEND_URL = 'https://backend-duckcaption.onrender.com';
+const BACKEND_URL = 'https://backend-duckcaption.onrender.com/api';
 let currentJobId = null;
 let exportedAudioPath = null;
 
@@ -16,7 +16,7 @@ async function testBackend() {
     try {
         status.textContent = '⏳ Test en cours...';
 
-        const response = await fetch(`${BACKEND_URL}/`, {
+        const response = await fetch(`${BACKEND_URL}/health`, {
             method: 'GET'
         });
 
