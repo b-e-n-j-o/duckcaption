@@ -16,23 +16,28 @@
         </section>
         <hr>
 
-        <!-- Section 1: Import audio -->
         <section>
             <h2>1. Sélectionner l'audio</h2>
-
-            <!-- Option A: Import fichier -->
             <sp-button id="importFileBtn">Importer un fichier audio</sp-button>
             <p id="fileStatus"></p>
-
-            <!-- Option B: Export timeline (désactivé pour l'instant) -->
-            <!-- <sp-button id="exportAudioBtn" disabled>Exporter timeline (bientôt)</sp-button> -->
         </section>
 
         <hr>
-        
-        <!-- Section 2: Upload & Transcription -->
+
         <section>
-            <h2>2. Transcrire</h2>
+            <h2>2. Options &amp; transcription</h2>
+            <div class="slider-group">
+                <label>Mots max : <strong id="maxWordsValue">5</strong></label>
+                <input type="range" id="maxWordsSlider" min="1" max="20" value="5">
+            </div>
+            <div class="slider-group">
+                <label>Caractères max : <strong id="maxCharsValue">24</strong></label>
+                <input type="range" id="maxCharsSlider" min="10" max="80" value="24">
+            </div>
+            <div class="slider-group">
+                <label>Caractères max / ligne : <strong id="maxCharsPerLineValue">42</strong></label>
+                <input type="range" id="maxCharsPerLineSlider" min="20" max="80" value="42">
+            </div>
             <sp-textfield id="contextInput" placeholder="Contexte (optionnel)" quiet></sp-textfield>
             <sp-button id="transcribeBtn" disabled>Lancer transcription</sp-button>
             <sp-progress-bar id="progressBar" style="display:none"></sp-progress-bar>
@@ -40,11 +45,10 @@
         </section>
 
         <hr>
-        
-        <!-- Section 3: Résultat -->
-        <section>
-            <h2>3. Résultat</h2>
-            <sp-textfield id="srtResult" multiline rows="10" quiet readonly></sp-textfield>
+
+        <section id="editorSection" style="display:none;">
+            <h2>3. Sous-titres</h2>
+            <div id="srtEditorContainer" class="srt-editor"></div>
             <sp-button id="downloadBtn" disabled>Télécharger SRT</sp-button>
         </section>
     </div>
