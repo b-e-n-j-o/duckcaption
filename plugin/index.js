@@ -113,7 +113,7 @@ function renderTranslatedSRTs() {
                     )
                     .join('')}
             </div>
-            <sp-button class="download-translated-btn" data-lang="${escapeHtml(lang)}">Télécharger (${title})</sp-button>
+            <button type="button" class="btn-download-translated" data-lang="${escapeHtml(lang)}">Télécharger (${title})</button>
         </section>`;
         })
         .join('');
@@ -128,7 +128,7 @@ function renderTranslatedSRTs() {
         });
     });
 
-    container.querySelectorAll('.download-translated-btn').forEach((btn) => {
+    container.querySelectorAll('.btn-download-translated').forEach((btn) => {
         btn.addEventListener('click', (e) => {
             const lang = e.currentTarget.getAttribute('data-lang');
             if (!lang || !translatedSegments[lang]) return;
@@ -207,24 +207,15 @@ async function refreshBackendStatus() {
 function resetTranslationUi() {
     translatedSegments = {};
     document.getElementById('translatedSRTsContainer').innerHTML = '';
-    document.querySelectorAll('.lang-toggle').forEach((btn) => {
-        btn.classList.remove('lang-toggle--selected');
-        btn.setAttribute('aria-pressed', 'false');
-    });
     const ts = document.getElementById('translationStatus');
     if (ts) ts.textContent = '';
 }
 
-function getSelectedTargetLanguages() {
-    return Array.from(document.querySelectorAll('.lang-toggle.lang-toggle--selected')).map((b) => b.dataset.lang);
-}
-
-function wireLanguageToggles() {
-    document.querySelectorAll('.lang-toggle').forEach((btn) => {
-        btn.addEventListener('click', () => {
-            const on = !btn.classList.contains('lang-toggle--selected');
-            btn.classList.toggle('lang-toggle--selected', on);
-            btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+function wireLanguageTranslateButtons() {
+    document.querySelectorAll('.btn-lang-translate').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+            const lang = e.currentTarget.getAttribute('data-lang');
+            if (lang) translateToLanguage(lang);
         });
     });
 }
@@ -239,7 +230,10 @@ function showEditorWithSegments(segments, showTranslation) {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function initPlugin() {
+    if (window.__duckCaptionInited) return;
+    window.__duckCaptionInited = true;
+
     refreshBackendStatus();
     setInterval(refreshBackendStatus, BACKEND_STATUS_INTERVAL_MS);
 
@@ -249,8 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('downloadOriginalBtn').addEventListener('click', () => {
         saveSrtToDisk(serializeSrt(srtSegments), `${sourceAudioBaseName}.srt`);
     });
-    wireLanguageToggles();
-    document.getElementById('translateBtn').addEventListener('click', translateSRT);
+    wireLanguageTranslateButtons();
 
     const maxWordsSlider = document.getElementById('maxWordsSlider');
     const maxCharsSlider = document.getElementById('maxCharsSlider');
@@ -268,7 +261,13 @@ document.addEventListener('DOMContentLoaded', () => {
         maxCharsPerLine = parseInt(e.target.value, 10);
         document.getElementById('maxCharsPerLineValue').textContent = String(maxCharsPerLine);
     });
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPlugin);
+} else {
+    initPlugin();
+}
 
 async function importAudioFile() {
     const fs = require('uxp').storage.localFileSystem;
@@ -427,21 +426,15 @@ async function transcribe() {
     }
 }
 
-async function translateSRT() {
-    const selectedLangs = getSelectedTargetLanguages();
-
-    if (selectedLangs.length === 0) {
-        alert('Sélectionnez au moins une langue (cliquez sur une ou plusieurs langues).');
-        return;
-    }
-
+async function translateToLanguage(lang) {
     if (!srtSegments || srtSegments.length === 0) {
         alert('Aucun sous-titre à traduire. Importez un SRT ou lancez une transcription.');
         return;
     }
 
     const status = document.getElementById('translationStatus');
-    status.textContent = '🌍 Traduction en cours...';
+    const label = LANG_LABELS[lang] || lang;
+    status.textContent = `🌍 Traduction ${label}…`;
 
     try {
         const srtContent = serializeSrt(srtSegments);
@@ -451,7 +444,7 @@ async function translateSRT() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 srt: srtContent,
-                languages: selectedLangs,
+                languages: [lang],
                 method: 'strict',
                 max_words: maxWords,
                 max_chars: maxChars
@@ -464,23 +457,26 @@ async function translateSRT() {
         }
 
         const data = await response.json();
-        translatedSegments = {};
-
-        for (const [lang, srtText] of Object.entries(data.translations || {})) {
-            let segs = parseSrt(srtText);
-            if (segs.length === 0 && String(srtText).trim()) {
-                segs = [{ time: '00:00:00,000 --> 00:00:01,000', text: String(srtText).trim() }];
-            }
-            translatedSegments[lang] = segs;
+        const srtText = (data.translations || {})[lang];
+        if (srtText == null) {
+            throw new Error('Réponse sans traduction pour cette langue');
         }
 
+        let segs = parseSrt(srtText);
+        if (segs.length === 0 && String(srtText).trim()) {
+            segs = [{ time: '00:00:00,000 --> 00:00:01,000', text: String(srtText).trim() }];
+        }
+        translatedSegments[lang] = segs;
+
         renderTranslatedSRTs();
-        status.textContent = '✅ Traduction terminée !';
+        status.textContent = `✅ ${label} prêt`;
     } catch (error) {
         status.textContent = '❌ Erreur: ' + error.message;
         console.error(error);
     }
 }
+
+window.translateToLanguage = translateToLanguage;
 
 async function saveSrtToDisk(srtContent, filename) {
     const fs = require('uxp').storage.localFileSystem;

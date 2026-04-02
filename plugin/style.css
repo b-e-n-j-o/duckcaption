@@ -174,48 +174,61 @@ sp-progress-bar {
     color: #999;
 }
 
-.language-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 10px;
-    margin-bottom: 12px;
+.translation-hint {
+    font-size: 12px;
+    color: #888;
+    margin: 0 0 12px 0;
+    line-height: 1.4;
 }
 
-/* Boutons natifs : fiables dans UXP (les checkboxes / sp-button peuvent ignorer les clics) */
-.lang-toggle {
+/* Un bouton par langue (drapeau + nom) — HTML natif pour UXP */
+.lang-translate-row {
     display: flex;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    align-items: stretch;
+    margin-bottom: 8px;
+}
+
+.btn-lang-translate {
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 10px 12px;
+    gap: 8px;
+    padding: 10px 14px;
     border: 1px solid #444;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 13px;
     font-family: inherit;
-    color: #ddd;
-    background: #2a2a2a;
-    text-align: center;
+    font-weight: 600;
+    color: #e8e8e8;
+    background: linear-gradient(180deg, #3a3a3a 0%, #2a2a2a 100%);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
-.lang-toggle:hover {
-    border-color: #666;
-    background: #333;
-}
-
-.lang-toggle--selected {
+.btn-lang-translate:hover {
     border-color: #ffb347;
     color: #ffb347;
-    font-weight: 600;
-    background: #2e2618;
-    box-shadow: 0 0 0 1px rgba(255, 179, 71, 0.35);
 }
 
-.btn-translate {
+.btn-lang-translate:active {
+    filter: brightness(0.92);
+}
+
+.btn-lang-flag {
+    font-size: 1.15em;
+    line-height: 1;
+}
+
+.btn-lang-label {
+    white-space: nowrap;
+}
+
+.btn-download-translated {
     display: inline-block;
-    margin: 10px 0;
-    padding: 10px 20px;
-    font-size: 14px;
+    margin-top: 10px;
+    padding: 8px 14px;
+    font-size: 13px;
     font-family: inherit;
     font-weight: 600;
     color: #1e1e1e;
@@ -225,12 +238,8 @@ sp-progress-bar {
     cursor: pointer;
 }
 
-.btn-translate:hover {
-    filter: brightness(1.08);
-}
-
-.btn-translate:active {
-    filter: brightness(0.95);
+.btn-download-translated:hover {
+    filter: brightness(1.06);
 }
 
 .srt-editor--translated {
@@ -252,9 +261,6 @@ sp-progress-bar {
     font-weight: 600;
 }
 
-.translated-section sp-button {
-    margin-top: 10px;
-}
 
 #translatedSRTsContainer {
     margin-top: 8px;

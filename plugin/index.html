@@ -57,14 +57,24 @@
 
         <section id="translationSection" style="display:none;">
             <h2>4. Traduction</h2>
-            <div class="language-grid" id="languageGrid" role="group" aria-label="Langues cibles">
-                <button type="button" class="lang-toggle" data-lang="en" aria-pressed="false">🇬🇧 Anglais</button>
-                <button type="button" class="lang-toggle" data-lang="nl" aria-pressed="false">🇳🇱 Néerlandais</button>
-                <button type="button" class="lang-toggle" data-lang="es" aria-pressed="false">🇪🇸 Espagnol</button>
-                <button type="button" class="lang-toggle" data-lang="de" aria-pressed="false">🇩🇪 Allemand</button>
-                <button type="button" class="lang-toggle" data-lang="fr" aria-pressed="false">🇫🇷 Français</button>
+            <p class="translation-hint">Chaque bouton envoie le SRT de l’éditeur vers le backend pour cette langue.</p>
+            <div class="lang-translate-row" role="group" aria-label="Traduire vers">
+                <button type="button" class="btn-lang-translate" data-lang="en" title="Traduire en anglais">
+                    <span class="btn-lang-flag" aria-hidden="true">🇬🇧</span><span class="btn-lang-label">Anglais</span>
+                </button>
+                <button type="button" class="btn-lang-translate" data-lang="nl" title="Traduire en néerlandais">
+                    <span class="btn-lang-flag" aria-hidden="true">🇳🇱</span><span class="btn-lang-label">Néerlandais</span>
+                </button>
+                <button type="button" class="btn-lang-translate" data-lang="es" title="Traduire en espagnol">
+                    <span class="btn-lang-flag" aria-hidden="true">🇪🇸</span><span class="btn-lang-label">Espagnol</span>
+                </button>
+                <button type="button" class="btn-lang-translate" data-lang="de" title="Traduire en allemand">
+                    <span class="btn-lang-flag" aria-hidden="true">🇩🇪</span><span class="btn-lang-label">Allemand</span>
+                </button>
+                <button type="button" class="btn-lang-translate" data-lang="fr" title="Traduire en français">
+                    <span class="btn-lang-flag" aria-hidden="true">🇫🇷</span><span class="btn-lang-label">Français</span>
+                </button>
             </div>
-            <button type="button" id="translateBtn" class="btn-translate">Traduire</button>
             <p id="translationStatus"></p>
         </section>
 
