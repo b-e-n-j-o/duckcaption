@@ -37,7 +37,7 @@ async function importAudioFile() {
 
     try {
         const file = await fs.getFileForOpening({
-            types: ['audio', 'video']
+            types: ['wav', 'mp3', 'mp4', 'mov', 'aac', 'm4a']
         });
 
         if (!file) {
