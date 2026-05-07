@@ -263,6 +263,8 @@ function showEditorWithSegments(segments, showTranslation) {
     srtSegments = segments;
     document.getElementById('editorSection').style.display = 'block';
     document.getElementById('downloadOriginalBtn').disabled = segments.length === 0;
+    const importBtn = document.getElementById('importToPremiereBtn');
+    if (importBtn) importBtn.disabled = segments.length === 0;
     const fnInput = document.getElementById('downloadOriginalFilename');
     if (fnInput) fnInput.value = defaultOriginalSrtFilename();
     renderSRTEditor(srtSegments);
@@ -466,6 +468,7 @@ function initPlugin() {
         const raw = inp ? inp.value : defaultOriginalSrtFilename();
         saveSrtToDisk(serializeSrt(srtSegments), sanitizeFilename(raw));
     });
+    document.getElementById('importToPremiereBtn').addEventListener('click', importSrtToPremiere);
     wireLanguageTranslateButtons();
 
     const maxWordsSlider = document.getElementById('maxWordsSlider');
@@ -711,6 +714,70 @@ async function saveSrtToDisk(srtContent, filename) {
         alert(`✅ Fichier sauvegardé : ${filename}`);
     } catch (error) {
         alert('❌ Erreur: ' + error.message);
+    }
+}
+
+async function importSrtToPremiere() {
+    const status = document.getElementById('importPremiereStatus');
+    if (!status) return;
+
+    if (!ppro) {
+        status.textContent = '❌ Module premierepro indisponible';
+        return;
+    }
+    if (!srtSegments || srtSegments.length === 0) {
+        status.textContent = '❌ Aucun sous-titre à importer';
+        return;
+    }
+
+    try {
+        status.textContent = '⏳ Préparation du SRT...';
+
+        const fnInput = document.getElementById('downloadOriginalFilename');
+        const rawName = fnInput ? fnInput.value : defaultOriginalSrtFilename();
+        const filename = sanitizeFilename(rawName);
+
+        const fs = require('uxp').storage.localFileSystem;
+        const tempFolder = await fs.getTemporaryFolder();
+        const srtFile = await tempFolder.createFile(filename, { overwrite: true });
+        await srtFile.write(serializeSrt(srtSegments));
+        const srtPath = srtFile.nativePath;
+
+        status.textContent = '⏳ Snapshot du projet...';
+
+        const project = await ppro.Project.getActiveProject();
+        if (!project) throw new Error('Aucun projet ouvert');
+
+        const rootBefore = await project.getRootItem();
+        const itemsBefore = await rootBefore.getItems();
+        const idsBefore = new Set();
+        for (const it of itemsBefore) {
+            const nodeId = await it.getNodeId();
+            idsBefore.add(nodeId);
+        }
+
+        status.textContent = '⏳ Import du SRT...';
+
+        const importOk = await project.importFiles([srtPath], true, null, false);
+        if (!importOk) throw new Error('Import du SRT échoué');
+
+        const rootAfter = await project.getRootItem();
+        const itemsAfter = await rootAfter.getItems();
+        let newItem = null;
+        for (const it of itemsAfter) {
+            const nodeId = await it.getNodeId();
+            if (!idsBefore.has(nodeId)) {
+                newItem = it;
+                break;
+            }
+        }
+
+        if (!newItem) throw new Error('Impossible de retrouver le SRT importé');
+
+        status.textContent = `✅ SRT importé dans le projet (${filename})`;
+    } catch (error) {
+        status.textContent = '❌ Erreur : ' + error.message;
+        console.error(error);
     }
 }
 

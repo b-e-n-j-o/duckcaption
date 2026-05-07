@@ -70,7 +70,11 @@
                 <label class="filename-label" for="downloadOriginalFilename">Nom du fichier</label>
                 <input type="text" id="downloadOriginalFilename" class="filename-input" autocomplete="off" spellcheck="false" value="subtitles.srt">
             </div>
-            <sp-button id="downloadOriginalBtn" disabled>Télécharger SRT</sp-button>
+            <div class="srt-actions-row">
+                <sp-button id="downloadOriginalBtn" disabled>💾 Télécharger SRT</sp-button>
+                <sp-button id="importToPremiereBtn" variant="cta" disabled>📥 Importer dans Premiere</sp-button>
+            </div>
+            <p id="importPremiereStatus"></p>
         </section>
 
         <hr>

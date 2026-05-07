@@ -270,6 +270,19 @@ sp-progress-bar {
     border-color: #ffb347;
 }
 
+.srt-actions-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+#importPremiereStatus {
+    font-size: 12px;
+    color: #aaa;
+    margin-top: 8px;
+}
+
 .translation-hint {
     font-size: 12px;
     color: #888;
