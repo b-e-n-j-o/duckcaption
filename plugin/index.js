@@ -743,36 +743,13 @@ async function importSrtToPremiere() {
         await srtFile.write(serializeSrt(srtSegments));
         const srtPath = srtFile.nativePath;
 
-        status.textContent = '⏳ Snapshot du projet...';
-
         const project = await ppro.Project.getActiveProject();
         if (!project) throw new Error('Aucun projet ouvert');
-
-        const rootBefore = await project.getRootItem();
-        const itemsBefore = await rootBefore.getItems();
-        const idsBefore = new Set();
-        for (const it of itemsBefore) {
-            const nodeId = await it.getNodeId();
-            idsBefore.add(nodeId);
-        }
 
         status.textContent = '⏳ Import du SRT...';
 
         const importOk = await project.importFiles([srtPath], true, null, false);
         if (!importOk) throw new Error('Import du SRT échoué');
-
-        const rootAfter = await project.getRootItem();
-        const itemsAfter = await rootAfter.getItems();
-        let newItem = null;
-        for (const it of itemsAfter) {
-            const nodeId = await it.getNodeId();
-            if (!idsBefore.has(nodeId)) {
-                newItem = it;
-                break;
-            }
-        }
-
-        if (!newItem) throw new Error('Impossible de retrouver le SRT importé');
 
         status.textContent = `✅ SRT importé dans le projet (${filename})`;
     } catch (error) {
