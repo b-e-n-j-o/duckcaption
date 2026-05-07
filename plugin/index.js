@@ -719,7 +719,6 @@ async function saveSrtToDisk(srtContent, filename) {
 
 async function importSrtToPremiere() {
     const status = document.getElementById('importPremiereStatus');
-    if (!status) return;
 
     if (!ppro) {
         status.textContent = '❌ Module premierepro indisponible';
@@ -746,12 +745,51 @@ async function importSrtToPremiere() {
         const project = await ppro.Project.getActiveProject();
         if (!project) throw new Error('Aucun projet ouvert');
 
-        status.textContent = '⏳ Import du SRT...';
+        const sequence = await project.getActiveSequence();
+        if (!sequence) throw new Error('Aucune séquence active');
+
+        const rootBefore = await project.getRootItem();
+        const itemsBefore = await rootBefore.getItems();
+        const namesBefore = new Set(itemsBefore.map((it) => it.name));
+
+        status.textContent = '⏳ Import du SRT dans le projet...';
 
         const importOk = await project.importFiles([srtPath], true, null, false);
         if (!importOk) throw new Error('Import du SRT échoué');
 
-        status.textContent = `✅ SRT importé dans le projet (${filename})`;
+        const rootAfter = await project.getRootItem();
+        const itemsAfter = await rootAfter.getItems();
+        let newItem = null;
+        for (const it of itemsAfter) {
+            if (!namesBefore.has(it.name)) {
+                newItem = it;
+                break;
+            }
+        }
+
+        if (!newItem) throw new Error('Impossible de retrouver le SRT importé dans le bin');
+
+        status.textContent = '⏳ Insertion sur la timeline...';
+
+        const frameRate = await sequence.getFrameRate();
+        const startTime = ppro.TickTime.createWithFrameAndFrameRate(0, frameRate);
+        const audioTrackCount = await sequence.getAudioTrackCount();
+        const newAudioTrackIndex = audioTrackCount;
+
+        const success = project.executeTransaction((compoundAction) => {
+            const action = sequence.createInsertProjectItemAction(
+                newItem,
+                startTime,
+                0,
+                newAudioTrackIndex,
+                false
+            );
+            compoundAction.addAction(action);
+        }, 'Inserer SRT Duck Caption');
+
+        if (!success) throw new Error('Insertion sur timeline échouée');
+
+        status.textContent = `✅ SRT importé et placé sur la timeline (${filename})`;
     } catch (error) {
         status.textContent = '❌ Erreur : ' + error.message;
         console.error(error);
