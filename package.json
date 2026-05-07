@@ -12,6 +12,7 @@
   "author": "Adobe Inc",
   "license": "Apache-2.0",
   "devDependencies": {
+    "@adobe/premierepro": "^26.2.0",
     "@babel/core": "^7.8.7",
     "@babel/plugin-proposal-object-rest-spread": "^7.8.3",
     "@babel/plugin-syntax-class-properties": "^7.10.4",

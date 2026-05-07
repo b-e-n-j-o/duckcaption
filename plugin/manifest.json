@@ -3,11 +3,13 @@
   "name": "Duckmotion Transcription",
   "version": "1.0.0",
   "main": "index.html",
-  "manifestVersion": 5,
-  "host": {
-    "app": "premierepro",
-    "minVersion": "25.0"
-  },
+  "manifestVersion": 6,
+  "host": [
+    {
+      "app": "premierepro",
+      "minVersion": "25.6"
+    }
+  ],
   "requiredPermissions": {
     "network": {
       "domains": [

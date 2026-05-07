@@ -1,4 +1,5 @@
 const BACKEND_URL = 'https://backend-duckcaption.onrender.com/api';
+let ppro = null;
 let currentJobId = null;
 let exportedAudioPath = null;
 let sourceAudioBaseName = 'subtitles';
@@ -21,6 +22,12 @@ const LANG_LABELS = {
 };
 
 const BACKEND_STATUS_INTERVAL_MS = 45000;
+
+try {
+    ppro = require('premierepro');
+} catch (error) {
+    console.warn('Module premierepro indisponible dans ce contexte:', error);
+}
 
 function basenameWithoutExt(filename) {
     if (!filename || typeof filename !== 'string') return 'subtitles';
@@ -264,6 +271,75 @@ function showEditorWithSegments(segments, showTranslation) {
     }
 }
 
+function renderAudioTracks(tracks) {
+    const container = document.getElementById('audioTracksContainer');
+    if (!container) return;
+
+    if (!tracks || tracks.length === 0) {
+        container.innerHTML = '<p class="audio-tracks-empty">Aucune piste audio détectée.</p>';
+        return;
+    }
+
+    container.innerHTML = tracks
+        .map(
+            (track) => `
+        <div class="audio-track-row">
+            <span class="audio-track-name">A${track.index + 1} — ${escapeHtml(track.name || '(sans nom)')}</span>
+            <span class="audio-track-meta">${track.clipCount} clip(s)</span>
+        </div>`
+        )
+        .join('');
+}
+
+async function listerPistesAudio() {
+    if (!ppro) {
+        throw new Error('Module premierepro non chargé. Vérifie l’environnement Premiere Pro.');
+    }
+
+    const project = await ppro.Project.getActiveProject();
+    if (!project) return [];
+
+    const sequence = await project.getActiveSequence();
+    if (!sequence) return [];
+
+    const audioTrackCount = await sequence.getAudioTrackCount();
+    const tracks = [];
+
+    for (let i = 0; i < audioTrackCount; i++) {
+        const track = await sequence.getAudioTrack(i);
+        const clips = await track.getTrackItems(ppro.Constants.TrackItemType.CLIP, false);
+        tracks.push({
+            index: i,
+            name: track.name,
+            clipCount: clips.length,
+            track
+        });
+    }
+
+    return tracks;
+}
+
+async function chargerPistesAudio() {
+    const status = document.getElementById('audioTracksStatus');
+    const button = document.getElementById('loadAudioTracksBtn');
+    if (!status || !button) return;
+
+    button.disabled = true;
+    status.textContent = '⏳ Lecture de la séquence active...';
+
+    try {
+        const tracks = await listerPistesAudio();
+        renderAudioTracks(tracks);
+        status.textContent = `✅ ${tracks.length} piste(s) audio chargée(s)`;
+    } catch (error) {
+        status.textContent = `❌ Erreur: ${error.message}`;
+        document.getElementById('audioTracksContainer').innerHTML = '';
+        console.error(error);
+    } finally {
+        button.disabled = false;
+    }
+}
+
 function initPlugin() {
     if (window.__duckCaptionInited) return;
     window.__duckCaptionInited = true;
@@ -273,6 +349,7 @@ function initPlugin() {
 
     document.getElementById('importAudioBtn').addEventListener('click', importAudioFile);
     document.getElementById('importSRTBtn').addEventListener('click', importSRTFile);
+    document.getElementById('loadAudioTracksBtn').addEventListener('click', chargerPistesAudio);
     document.getElementById('transcribeBtn').addEventListener('click', transcribe);
     document.getElementById('downloadOriginalBtn').addEventListener('click', () => {
         const inp = document.getElementById('downloadOriginalFilename');

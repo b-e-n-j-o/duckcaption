@@ -74,6 +74,7 @@ sp-progress-bar {
 }
 
 #fileStatus,
+#audioTracksStatus,
 #transcribeStatus,
 #translationStatus {
     font-size: 12px;
@@ -91,6 +92,45 @@ sp-progress-bar {
 
 .button-group sp-button {
     margin: 0;
+}
+
+.audio-tracks-container {
+    margin-top: 10px;
+    border: 1px solid #3a3a3a;
+    border-radius: 6px;
+    background: #252525;
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.audio-track-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 10px;
+    border-bottom: 1px solid #333;
+    font-size: 12px;
+}
+
+.audio-track-row:last-child {
+    border-bottom: none;
+}
+
+.audio-track-name {
+    color: #e8e8e8;
+}
+
+.audio-track-meta {
+    color: #aaa;
+    font-family: ui-monospace, monospace;
+}
+
+.audio-tracks-empty {
+    margin: 0;
+    padding: 10px;
+    color: #999;
+    font-size: 12px;
 }
 
 .slider-group {

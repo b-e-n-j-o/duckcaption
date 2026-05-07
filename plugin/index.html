@@ -24,8 +24,17 @@
 
         <hr>
 
+        <section>
+            <h2>2. Inspection séquence</h2>
+            <sp-button id="loadAudioTracksBtn">Charger les pistes</sp-button>
+            <p id="audioTracksStatus"></p>
+            <div id="audioTracksContainer" class="audio-tracks-container"></div>
+        </section>
+
+        <hr>
+
         <section id="transcriptionOptions">
-            <h2>2. Options transcription</h2>
+            <h2>3. Options transcription</h2>
             <div class="slider-group">
                 <label>Mots max : <strong id="maxWordsValue">5</strong></label>
                 <input type="range" id="maxWordsSlider" min="1" max="20" value="5">
@@ -48,7 +57,7 @@
         <hr>
 
         <section id="editorSection" style="display:none;">
-            <h2>3. Sous-titres</h2>
+            <h2>4. Sous-titres</h2>
             <div id="srtEditorContainer" class="srt-editor"></div>
             <div class="download-filename-row">
                 <label class="filename-label" for="downloadOriginalFilename">Nom du fichier</label>
@@ -60,7 +69,7 @@
         <hr>
 
         <section id="translationSection" style="display:none;">
-            <h2>4. Traduction</h2>
+            <h2>5. Traduction</h2>
             <p class="translation-hint">Chaque bouton envoie le SRT de l’éditeur vers le backend pour cette langue.</p>
             <div class="lang-translate-row" role="group" aria-label="Traduire vers">
                 <button type="button" class="btn-lang-translate" data-lang="en" title="Traduire en anglais">
