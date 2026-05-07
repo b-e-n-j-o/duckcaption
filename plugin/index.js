@@ -273,7 +273,21 @@ function showEditorWithSegments(segments, showTranslation) {
 
 function renderAudioTracks(tracks) {
     const container = document.getElementById('audioTracksContainer');
+    const select = document.getElementById('trackSelect');
+    const exportBtn = document.getElementById('exportTrackBtn');
     if (!container) return;
+
+    if (select) {
+        const options = ['<option value="mix">Mix complet</option>'];
+        tracks.forEach((track) => {
+            options.push(
+                `<option value="${track.index}">A${track.index + 1} - ${escapeHtml(track.name || '(sans nom)')} (${track.clipCount} clip(s))</option>`
+            );
+        });
+        select.innerHTML = options.join('');
+        select.disabled = tracks.length === 0;
+    }
+    if (exportBtn) exportBtn.disabled = tracks.length === 0;
 
     if (!tracks || tracks.length === 0) {
         container.innerHTML = '<p class="audio-tracks-empty">Aucune piste audio détectée.</p>';
@@ -340,6 +354,101 @@ async function chargerPistesAudio() {
     }
 }
 
+async function exportSelectedTrack() {
+    const select = document.getElementById('trackSelect');
+    const status = document.getElementById('audioTracksStatus');
+    const value = select ? select.value : 'mix';
+
+    if (!status) return;
+
+    if (!ppro) {
+        status.textContent = '❌ Module premierepro indisponible';
+        return;
+    }
+
+    try {
+        const project = await ppro.Project.getActiveProject();
+        const sequence = await project.getActiveSequence();
+        if (!sequence) throw new Error('Aucune séquence active');
+
+        const fs = require('uxp').storage.localFileSystem;
+        const tempFolder = await fs.getTemporaryFolder();
+        const outName = `duckcaption_export_${Date.now()}.wav`;
+        const outFile = await tempFolder.createFile(outName, { overwrite: true });
+        const outPath = outFile.nativePath;
+
+        const presetPath = await getAudioPresetPath();
+        const encoderManager = await ppro.EncoderManager.getManager();
+
+        let originalMuteStates = null;
+        if (value !== 'mix') {
+            const trackIndex = parseInt(value, 10);
+            status.textContent = `⏳ Solo piste A${trackIndex + 1}...`;
+            originalMuteStates = await soloAudioTrack(sequence, trackIndex);
+        } else {
+            status.textContent = '⏳ Export du mix complet...';
+        }
+
+        try {
+            status.textContent = '⏳ Export audio en cours (peut prendre 1-2 min)...';
+            const result = await encoderManager.exportSequence(
+                sequence,
+                ppro.EncoderManager.EXPORT_IMMEDIATELY,
+                outPath,
+                presetPath,
+                true
+            );
+            if (!result) throw new Error('Export retourne false');
+        } finally {
+            if (originalMuteStates) {
+                await restoreMuteStates(sequence, originalMuteStates);
+            }
+        }
+
+        exportedAudioPath = outPath;
+        sourceAudioBaseName = basenameWithoutExt(outName);
+
+        document.getElementById('transcriptionOptions').style.display = 'block';
+        document.getElementById('transcribeBtn').disabled = false;
+        document.getElementById('editorSection').style.display = 'none';
+        document.getElementById('translationSection').style.display = 'none';
+        resetTranslationUi();
+
+        status.textContent = `✅ Audio extrait : ${outName}`;
+    } catch (error) {
+        status.textContent = '❌ Erreur : ' + error.message;
+        console.error(error);
+    }
+}
+
+async function soloAudioTrack(sequence, soloIndex) {
+    const count = await sequence.getAudioTrackCount();
+    const states = [];
+    for (let i = 0; i < count; i++) {
+        const track = await sequence.getAudioTrack(i);
+        const wasMuted = await track.isMuted();
+        states.push({ index: i, wasMuted });
+        const shouldMute = i !== soloIndex;
+        if (shouldMute !== wasMuted) {
+            await track.setMute(shouldMute);
+        }
+    }
+    return states;
+}
+
+async function restoreMuteStates(sequence, states) {
+    for (const s of states) {
+        const track = await sequence.getAudioTrack(s.index);
+        await track.setMute(s.wasMuted);
+    }
+}
+
+async function getAudioPresetPath() {
+    const pluginFolder = await require('uxp').storage.localFileSystem.getPluginFolder();
+    const presetEntry = await pluginFolder.getEntry('presets/audio_wav.epr');
+    return presetEntry.nativePath;
+}
+
 function initPlugin() {
     if (window.__duckCaptionInited) return;
     window.__duckCaptionInited = true;
@@ -350,6 +459,7 @@ function initPlugin() {
     document.getElementById('importAudioBtn').addEventListener('click', importAudioFile);
     document.getElementById('importSRTBtn').addEventListener('click', importSRTFile);
     document.getElementById('loadAudioTracksBtn').addEventListener('click', chargerPistesAudio);
+    document.getElementById('exportTrackBtn').addEventListener('click', exportSelectedTrack);
     document.getElementById('transcribeBtn').addEventListener('click', transcribe);
     document.getElementById('downloadOriginalBtn').addEventListener('click', () => {
         const inp = document.getElementById('downloadOriginalFilename');

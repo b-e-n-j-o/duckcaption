@@ -28,6 +28,13 @@
             <h2>2. Inspection séquence</h2>
             <sp-button id="loadAudioTracksBtn">Charger les pistes</sp-button>
             <p id="audioTracksStatus"></p>
+            <div class="track-export-row">
+                <label for="trackSelect">Piste à exporter</label>
+                <select id="trackSelect" disabled>
+                    <option value="mix">Mix complet</option>
+                </select>
+                <sp-button id="exportTrackBtn" disabled>Exporter la sélection</sp-button>
+            </div>
             <div id="audioTracksContainer" class="audio-tracks-container"></div>
         </section>
 
