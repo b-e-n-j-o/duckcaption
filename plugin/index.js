@@ -36,6 +36,20 @@ function basenameWithoutExt(filename) {
     return base.trim() || 'subtitles';
 }
 
+async function getProjectBaseName() {
+    if (!ppro) return null;
+    try {
+        const project = await ppro.Project.getActiveProject();
+        if (!project) return null;
+        const name = project.name;
+        if (!name) return null;
+        return basenameWithoutExt(name);
+    } catch (e) {
+        console.warn('Nom de projet indisponible:', e);
+        return null;
+    }
+}
+
 /** Nom de fichier sûr pour l’export (évite chemins / caractères interdits) */
 function sanitizeFilename(name) {
     let s = String(name || '').trim();
@@ -45,6 +59,7 @@ function sanitizeFilename(name) {
     return s;
 }
 
+/** Basé sur `sourceAudioBaseName` (nom du projet .prproj en export / transcription depuis Premiere quand disponible). */
 function defaultOriginalSrtFilename() {
     return `${sourceAudioBaseName}.srt`;
 }
@@ -408,7 +423,8 @@ async function exportSelectedTrack() {
         }
 
         exportedAudioPath = outPath;
-        sourceAudioBaseName = basenameWithoutExt(outName);
+        const projectBaseName = await getProjectBaseName();
+        sourceAudioBaseName = projectBaseName || basenameWithoutExt(outName);
 
         document.getElementById('transcriptionOptions').style.display = 'block';
         document.getElementById('transcribeBtn').disabled = false;
@@ -576,6 +592,8 @@ async function transcribe() {
         const fs = require('uxp').storage.localFileSystem;
         const audioFile = await fs.getEntryWithUrl(exportedAudioPath);
         sourceAudioBaseName = basenameWithoutExt(audioFile.name);
+        const projectBaseName = await getProjectBaseName();
+        if (projectBaseName) sourceAudioBaseName = projectBaseName;
         const arrayBuffer = await audioFile.read({ format: require('uxp').storage.formats.binary });
 
         status.textContent = '⏳ Upload...';
