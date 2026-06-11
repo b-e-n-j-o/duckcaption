@@ -274,8 +274,14 @@ function wireLanguageTranslateButtons() {
     });
 }
 
+function expandAccordion(id) {
+    const el = document.getElementById(id);
+    if (el) el.open = true;
+}
+
 function showEditorWithSegments(segments, showTranslation) {
     srtSegments = segments;
+    expandAccordion('accordionPremiere');
     document.getElementById('editorSection').style.display = 'block';
     document.getElementById('downloadOriginalBtn').disabled = segments.length === 0;
     const importBtn = document.getElementById('importToPremiereBtn');
@@ -284,6 +290,7 @@ function showEditorWithSegments(segments, showTranslation) {
     if (fnInput) fnInput.value = defaultOriginalSrtFilename();
     renderSRTEditor(srtSegments);
     if (showTranslation) {
+        expandAccordion('accordionSrtTranslate');
         document.getElementById('translationSection').style.display = 'block';
     }
 }
@@ -426,6 +433,7 @@ async function exportSelectedTrack() {
         const projectBaseName = await getProjectBaseName();
         sourceAudioBaseName = projectBaseName || basenameWithoutExt(outName);
 
+        expandAccordion('accordionPremiere');
         document.getElementById('transcriptionOptions').style.display = 'block';
         document.getElementById('transcribeBtn').disabled = false;
         document.getElementById('editorSection').style.display = 'none';
@@ -535,6 +543,8 @@ async function importAudioFile() {
         exportedAudioPath = file.nativePath;
         sourceAudioBaseName = basenameWithoutExt(file.name);
 
+        expandAccordion('accordionAudioSrt');
+        expandAccordion('accordionPremiere');
         document.getElementById('transcriptionOptions').style.display = 'block';
         document.getElementById('transcribeBtn').disabled = false;
         document.getElementById('editorSection').style.display = 'none';
@@ -550,7 +560,7 @@ async function importAudioFile() {
 
 async function importSRTFile() {
     const fs = require('uxp').storage.localFileSystem;
-    const status = document.getElementById('fileStatus');
+    const status = document.getElementById('fileStatusSrt');
 
     try {
         const file = await fs.getFileForOpening({
@@ -573,6 +583,7 @@ async function importSRTFile() {
 
         exportedAudioPath = null;
         currentJobId = null;
+        expandAccordion('accordionSrtTranslate');
         document.getElementById('transcriptionOptions').style.display = 'none';
         document.getElementById('transcribeBtn').disabled = true;
 

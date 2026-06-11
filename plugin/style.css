@@ -16,6 +16,59 @@ body {
     padding-bottom: 40px;
 }
 
+.accordion {
+    margin-bottom: 10px;
+    border: 1px solid #3a3a3a;
+    border-radius: 8px;
+    background: #252525;
+    overflow: hidden;
+}
+
+.accordion-summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #e8e8e8;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+}
+
+.accordion-summary::-webkit-details-marker {
+    display: none;
+}
+
+.accordion-summary::before {
+    content: '▸';
+    color: #ffb347;
+    font-size: 12px;
+    transition: transform 0.15s ease;
+}
+
+.accordion[open] > .accordion-summary::before {
+    transform: rotate(90deg);
+}
+
+.accordion[open] > .accordion-summary {
+    border-bottom: 1px solid #3a3a3a;
+    color: #ffb347;
+}
+
+.accordion-body {
+    padding: 12px 14px 16px;
+}
+
+.accordion-body section {
+    margin-bottom: 0;
+}
+
+.accordion-body hr {
+    margin: 16px 0;
+}
+
 .header-row {
     display: flex;
     align-items: center;
@@ -85,6 +138,7 @@ sp-progress-bar {
 }
 
 #fileStatus,
+#fileStatusSrt,
 #audioTracksStatus,
 #transcribeStatus,
 #translationStatus {

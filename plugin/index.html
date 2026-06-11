@@ -11,98 +11,105 @@
             <h1>🦆 Duck Caption</h1>
             <span id="backendLed" class="backend-led backend-led--pending" title="Vérification du serveur…" role="status" aria-live="polite"></span>
         </header>
-        <hr>
 
-        <section>
-            <h2>1. Sélectionner</h2>
-            <div class="button-group">
-                <sp-button id="importAudioBtn">Importer audio</sp-button>
-                <sp-button id="importSRTBtn">Importer SRT</sp-button>
+        <details id="accordionAudioSrt" class="accordion">
+            <summary class="accordion-summary">Transcription Audio → SRT</summary>
+            <div class="accordion-body">
+                <div class="button-group">
+                    <sp-button id="importAudioBtn">Importer audio</sp-button>
+                </div>
+                <p id="fileStatus"></p>
             </div>
-            <p id="fileStatus"></p>
-        </section>
+        </details>
 
-        <hr>
-
-        <section>
-            <h2>2. Inspection séquence</h2>
-            <button id="loadAudioTracksBtn">Charger les pistes</button>
-            <p id="audioTracksStatus"></p>
-            <div style="border:2px solid red; padding:10px;">
-                <label>Piste à exporter</label>
-                <select id="trackSelect" disabled>
-                    <option value="mix">Mix complet</option>
-                </select>
-                <button id="exportTrackBtn" disabled>Exporter</button>
+        <details id="accordionSrtTranslate" class="accordion">
+            <summary class="accordion-summary">Traduction SRT → SRT</summary>
+            <div class="accordion-body">
+                <div class="button-group">
+                    <sp-button id="importSRTBtn">Importer SRT</sp-button>
+                </div>
+                <p id="fileStatusSrt"></p>
+                <section id="translationSection" style="display:none;">
+                    <p class="translation-hint">Chaque bouton envoie le SRT de l’éditeur vers le backend pour cette langue.</p>
+                    <div class="lang-translate-row" role="group" aria-label="Traduire vers">
+                        <button type="button" class="btn-lang-translate" data-lang="en" title="Traduire en anglais">
+                            <span class="btn-lang-flag" aria-hidden="true">🇬🇧</span><span class="btn-lang-label">Anglais</span>
+                        </button>
+                        <button type="button" class="btn-lang-translate" data-lang="nl" title="Traduire en néerlandais">
+                            <span class="btn-lang-flag" aria-hidden="true">🇳🇱</span><span class="btn-lang-label">Néerlandais</span>
+                        </button>
+                        <button type="button" class="btn-lang-translate" data-lang="es" title="Traduire en espagnol">
+                            <span class="btn-lang-flag" aria-hidden="true">🇪🇸</span><span class="btn-lang-label">Espagnol</span>
+                        </button>
+                        <button type="button" class="btn-lang-translate" data-lang="de" title="Traduire en allemand">
+                            <span class="btn-lang-flag" aria-hidden="true">🇩🇪</span><span class="btn-lang-label">Allemand</span>
+                        </button>
+                        <button type="button" class="btn-lang-translate" data-lang="fr" title="Traduire en français">
+                            <span class="btn-lang-flag" aria-hidden="true">🇫🇷</span><span class="btn-lang-label">Français</span>
+                        </button>
+                    </div>
+                    <p id="translationStatus"></p>
+                </section>
+                <div id="translatedSRTsContainer"></div>
             </div>
-            <div id="audioTracksContainer" class="audio-tracks-container"></div>
-        </section>
+        </details>
 
-        <hr>
+        <details id="accordionPremiere" class="accordion" open>
+            <summary class="accordion-summary">Transcription séquence Premiere</summary>
+            <div class="accordion-body">
+                <section>
+                    <button id="loadAudioTracksBtn">Charger les pistes</button>
+                    <p id="audioTracksStatus"></p>
+                    <div style="border:2px solid red; padding:10px;">
+                        <label>Piste à exporter</label>
+                        <select id="trackSelect" disabled>
+                            <option value="mix">Mix complet</option>
+                        </select>
+                        <button id="exportTrackBtn" disabled>Sélectionner</button>
+                    </div>
+                    <div id="audioTracksContainer" class="audio-tracks-container"></div>
+                </section>
 
-        <section id="transcriptionOptions">
-            <h2>3. Options de transcription</h2>
-            <div class="slider-group">
-                <label>Mots max : <strong id="maxWordsValue">10</strong></label>
-                <input type="range" id="maxWordsSlider" min="1" max="20" value="10">
+                <hr>
+
+                <section id="transcriptionOptions">
+                    <h2>Options de transcription</h2>
+                    <div class="slider-group">
+                        <label>Mots max : <strong id="maxWordsValue">10</strong></label>
+                        <input type="range" id="maxWordsSlider" min="1" max="20" value="10">
+                    </div>
+                    <div class="slider-group">
+                        <label>Caractères max : <strong id="maxCharsValue">42</strong></label>
+                        <input type="range" id="maxCharsSlider" min="10" max="80" value="42">
+                    </div>
+                    <div class="slider-group">
+                        <label>Caractères / ligne : <strong id="maxCharsPerLineValue">21</strong></label>
+                        <input type="range" id="maxCharsPerLineSlider" min="5" max="50" value="21">
+                    </div>
+                    <sp-textfield id="contextInput" placeholder="Contexte (optionnel)" quiet></sp-textfield>
+                    <sp-textfield id="keytermsInput" placeholder="Termes clés (séparés par virgules, optionnel)" quiet></sp-textfield>
+                    <sp-button id="transcribeBtn" disabled>Lancer transcription</sp-button>
+                    <sp-progress-bar id="progressBar" style="display:none"></sp-progress-bar>
+                    <p id="transcribeStatus"></p>
+                </section>
+
+                <hr>
+
+                <section id="editorSection" style="display:none;">
+                    <h2>Sous-titres</h2>
+                    <div id="srtEditorContainer" class="srt-editor"></div>
+                    <div class="download-filename-row">
+                        <label class="filename-label" for="downloadOriginalFilename">Nom du fichier</label>
+                        <input type="text" id="downloadOriginalFilename" class="filename-input" autocomplete="off" spellcheck="false" value="subtitles.srt">
+                    </div>
+                    <div class="srt-actions-row">
+                        <sp-button id="downloadOriginalBtn" disabled>💾 Télécharger SRT</sp-button>
+                        <sp-button id="importToPremiereBtn" variant="cta" disabled>📥 Importer dans Premiere</sp-button>
+                    </div>
+                    <p id="importPremiereStatus"></p>
+                </section>
             </div>
-            <div class="slider-group">
-                <label>Caractères max : <strong id="maxCharsValue">42</strong></label>
-                <input type="range" id="maxCharsSlider" min="10" max="80" value="42">
-            </div>
-            <div class="slider-group">
-                <label>Caractères / ligne : <strong id="maxCharsPerLineValue">21</strong></label>
-                <input type="range" id="maxCharsPerLineSlider" min="5" max="50" value="21">
-            </div>
-            <sp-textfield id="contextInput" placeholder="Contexte (optionnel)" quiet></sp-textfield>
-            <sp-textfield id="keytermsInput" placeholder="Termes clés (séparés par virgules, optionnel)" quiet></sp-textfield>
-            <sp-button id="transcribeBtn" disabled>Lancer transcription</sp-button>
-            <sp-progress-bar id="progressBar" style="display:none"></sp-progress-bar>
-            <p id="transcribeStatus"></p>
-        </section>
-
-        <hr>
-
-        <section id="editorSection" style="display:none;">
-            <h2>4. Sous-titres</h2>
-            <div id="srtEditorContainer" class="srt-editor"></div>
-            <div class="download-filename-row">
-                <label class="filename-label" for="downloadOriginalFilename">Nom du fichier</label>
-                <input type="text" id="downloadOriginalFilename" class="filename-input" autocomplete="off" spellcheck="false" value="subtitles.srt">
-            </div>
-            <div class="srt-actions-row">
-                <sp-button id="downloadOriginalBtn" disabled>💾 Télécharger SRT</sp-button>
-                <sp-button id="importToPremiereBtn" variant="cta" disabled>📥 Importer dans Premiere</sp-button>
-            </div>
-            <p id="importPremiereStatus"></p>
-        </section>
-
-        <hr>
-
-        <section id="translationSection" style="display:none;">
-            <h2>5. Traduction</h2>
-            <p class="translation-hint">Chaque bouton envoie le SRT de l’éditeur vers le backend pour cette langue.</p>
-            <div class="lang-translate-row" role="group" aria-label="Traduire vers">
-                <button type="button" class="btn-lang-translate" data-lang="en" title="Traduire en anglais">
-                    <span class="btn-lang-flag" aria-hidden="true">🇬🇧</span><span class="btn-lang-label">Anglais</span>
-                </button>
-                <button type="button" class="btn-lang-translate" data-lang="nl" title="Traduire en néerlandais">
-                    <span class="btn-lang-flag" aria-hidden="true">🇳🇱</span><span class="btn-lang-label">Néerlandais</span>
-                </button>
-                <button type="button" class="btn-lang-translate" data-lang="es" title="Traduire en espagnol">
-                    <span class="btn-lang-flag" aria-hidden="true">🇪🇸</span><span class="btn-lang-label">Espagnol</span>
-                </button>
-                <button type="button" class="btn-lang-translate" data-lang="de" title="Traduire en allemand">
-                    <span class="btn-lang-flag" aria-hidden="true">🇩🇪</span><span class="btn-lang-label">Allemand</span>
-                </button>
-                <button type="button" class="btn-lang-translate" data-lang="fr" title="Traduire en français">
-                    <span class="btn-lang-flag" aria-hidden="true">🇫🇷</span><span class="btn-lang-label">Français</span>
-                </button>
-            </div>
-            <p id="translationStatus"></p>
-        </section>
-
-        <div id="translatedSRTsContainer"></div>
+        </details>
     </div>
 </body>
 </html>
