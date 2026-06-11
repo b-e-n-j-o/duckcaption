@@ -797,6 +797,19 @@ async function findProjectItemByMediaPath(project, mediaPath) {
     return null;
 }
 
+async function getSequenceVideoFrameRate(sequence) {
+    try {
+        const settings = await sequence.getSettings();
+        if (settings) {
+            const frameRate = await settings.getVideoFrameRate();
+            if (frameRate) return frameRate;
+        }
+    } catch (e) {
+        console.warn('Frame rate séquence indisponible:', e);
+    }
+    return ppro.FrameRate.createWithValue(25);
+}
+
 async function findImportedSrtItem(project, mediaPath, namesBefore) {
     for (let attempt = 0; attempt < 6; attempt++) {
         if (attempt > 0) await delay(150);
@@ -874,23 +887,25 @@ async function importSrtToPremiere() {
 
         status.textContent = '⏳ Insertion sur la timeline...';
 
-        const frameRate = await sequence.getFrameRate();
+        const frameRate = await getSequenceVideoFrameRate(sequence);
         const startTime = ppro.TickTime.createWithFrameAndFrameRate(0, frameRate);
-        const audioTrackCount = await sequence.getAudioTrackCount();
-        const newAudioTrackIndex = audioTrackCount;
+        const editor = await ppro.SequenceEditor.getEditor(sequence);
+        const insertAction = await editor.createInsertProjectItemAction(
+            newItem,
+            startTime,
+            0,
+            0,
+            false
+        );
 
         const success = project.executeTransaction((compoundAction) => {
-            const action = sequence.createInsertProjectItemAction(
-                newItem,
-                startTime,
-                0,
-                newAudioTrackIndex,
-                false
-            );
-            compoundAction.addAction(action);
+            compoundAction.addAction(insertAction);
         }, 'Inserer SRT Duck Caption');
 
-        if (!success) throw new Error('Insertion sur timeline échouée');
+        if (!success) {
+            status.textContent = `✅ SRT importé dans le projet (${filename}) — insertion timeline non effectuée`;
+            return;
+        }
 
         status.textContent = `✅ SRT importé et placé sur la timeline (${filename})`;
     } catch (error) {
