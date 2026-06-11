@@ -9,9 +9,9 @@ let srtSegments = [];
 /** { lang: Array<{ time, text }> } */
 let translatedSegments = {};
 
-let maxWords = 5;
-let maxChars = 24;
-let maxCharsPerLine = 42;
+let maxWords = 10;
+let maxChars = 42;
+let maxCharsPerLine = 21;
 
 const LANG_LABELS = {
     en: '🇬🇧 Anglais',
@@ -491,17 +491,24 @@ function initPlugin() {
     const maxCharsSlider = document.getElementById('maxCharsSlider');
     const maxCharsPerLineSlider = document.getElementById('maxCharsPerLineSlider');
 
-    maxWordsSlider.addEventListener('input', (e) => {
-        maxWords = parseInt(e.target.value, 10);
-        document.getElementById('maxWordsValue').textContent = String(maxWords);
+    function syncSliderValue(slider, valueElId, setter) {
+        const v = parseInt(slider.value, 10);
+        setter(v);
+        document.getElementById(valueElId).textContent = String(v);
+    }
+
+    syncSliderValue(maxWordsSlider, 'maxWordsValue', (v) => { maxWords = v; });
+    syncSliderValue(maxCharsSlider, 'maxCharsValue', (v) => { maxChars = v; });
+    syncSliderValue(maxCharsPerLineSlider, 'maxCharsPerLineValue', (v) => { maxCharsPerLine = v; });
+
+    maxWordsSlider.addEventListener('input', () => {
+        syncSliderValue(maxWordsSlider, 'maxWordsValue', (v) => { maxWords = v; });
     });
-    maxCharsSlider.addEventListener('input', (e) => {
-        maxChars = parseInt(e.target.value, 10);
-        document.getElementById('maxCharsValue').textContent = String(maxChars);
+    maxCharsSlider.addEventListener('input', () => {
+        syncSliderValue(maxCharsSlider, 'maxCharsValue', (v) => { maxChars = v; });
     });
-    maxCharsPerLineSlider.addEventListener('input', (e) => {
-        maxCharsPerLine = parseInt(e.target.value, 10);
-        document.getElementById('maxCharsPerLineValue').textContent = String(maxCharsPerLine);
+    maxCharsPerLineSlider.addEventListener('input', () => {
+        syncSliderValue(maxCharsPerLineSlider, 'maxCharsPerLineValue', (v) => { maxCharsPerLine = v; });
     });
 }
 
