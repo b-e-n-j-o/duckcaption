@@ -23,6 +23,9 @@ const LANG_LABELS = {
 
 const BACKEND_STATUS_INTERVAL_MS = 45000;
 
+/** Chemin du dossier cible dans le bin Premiere (template projet). */
+const PREMIERE_SRT_BIN_PATH = ['Assets', 'SRT'];
+
 try {
     ppro = require('premierepro');
 } catch (error) {
@@ -695,6 +698,84 @@ async function translateToLanguage(lang) {
 
 window.translateToLanguage = translateToLanguage;
 
+function folderNamesMatch(a, b) {
+    return String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
+}
+
+async function findFolderByPath(rootFolder, pathSegments) {
+    let current = rootFolder;
+    for (const segment of pathSegments) {
+        const items = await current.getItems();
+        let next = null;
+        for (const item of items) {
+            const folder = ppro.FolderItem.cast(item);
+            if (folder && folderNamesMatch(item.name, segment)) {
+                next = folder;
+                break;
+            }
+        }
+        if (!next) return null;
+        current = next;
+    }
+    return current;
+}
+
+async function ensureFolderByPath(project, pathSegments) {
+    const root = await project.getRootItem();
+    let current = root;
+
+    for (const segment of pathSegments) {
+        const items = await current.getItems();
+        let next = null;
+        for (const item of items) {
+            const folder = ppro.FolderItem.cast(item);
+            if (folder && folderNamesMatch(item.name, segment)) {
+                next = folder;
+                break;
+            }
+        }
+        if (next) {
+            current = next;
+            continue;
+        }
+
+        const created = project.executeTransaction((compoundAction) => {
+            compoundAction.addAction(current.createBinAction(segment, false));
+        }, `Duck Caption — dossier ${segment}`);
+
+        if (!created) return null;
+
+        const itemsAfter = await current.getItems();
+        next = null;
+        for (const item of itemsAfter) {
+            const folder = ppro.FolderItem.cast(item);
+            if (folder && folderNamesMatch(item.name, segment)) {
+                next = folder;
+                break;
+            }
+        }
+        if (!next) return null;
+        current = next;
+    }
+
+    return current;
+}
+
+async function resolveSrtImportBin(project) {
+    const root = await project.getRootItem();
+    const existing = await findFolderByPath(root, PREMIERE_SRT_BIN_PATH);
+    if (existing) {
+        return { bin: existing, pathLabel: PREMIERE_SRT_BIN_PATH.join('/') };
+    }
+
+    const created = await ensureFolderByPath(project, PREMIERE_SRT_BIN_PATH);
+    if (created) {
+        return { bin: created, pathLabel: PREMIERE_SRT_BIN_PATH.join('/') };
+    }
+
+    return { bin: root, pathLabel: 'racine du projet' };
+}
+
 async function saveSrtToDisk(srtContent, filename) {
     const fs = require('uxp').storage.localFileSystem;
 
@@ -739,10 +820,11 @@ async function importSrtToPremiere(segments, options = {}) {
 
         setStatus('⏳ Import du SRT dans Premiere...');
 
-        const importOk = await project.importFiles([srtPath], true, null, false);
+        const { bin: targetBin, pathLabel } = await resolveSrtImportBin(project);
+        const importOk = await project.importFiles([srtPath], true, targetBin, false);
         if (!importOk) throw new Error('Import du SRT échoué');
 
-        setStatus(`✅ SRT importé dans Premiere (${filename})`);
+        setStatus(`✅ SRT importé dans ${pathLabel} (${filename})`);
         return true;
     } catch (error) {
         setStatus('❌ Erreur : ' + error.message);
