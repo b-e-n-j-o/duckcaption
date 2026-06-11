@@ -81,6 +81,27 @@ function escapeHtml(str) {
         .replace(/"/g, '&quot;');
 }
 
+function setTranscribeStatusPlain(el, message) {
+    if (!el) return;
+    el.className = 'transcribe-status';
+    el.textContent = message;
+}
+
+function showSrtImportSuccessBadge(el, pathLabel, filename) {
+    if (!el) return;
+    el.className = 'transcribe-status transcribe-status--imported';
+    el.innerHTML = `
+        <div class="srt-import-badge">
+            <span class="srt-import-badge__icon" aria-hidden="true">✓</span>
+            <div class="srt-import-badge__body">
+                <span class="srt-import-badge__title">SRT importé dans Premiere</span>
+                <span class="srt-import-badge__path">${escapeHtml(pathLabel)}</span>
+                <span class="srt-import-badge__file">${escapeHtml(filename)}</span>
+            </div>
+        </div>
+    `;
+}
+
 function parseSrt(content) {
     const segments = [];
     const normalized = content.replace(/\r\n/g, '\n').trim();
@@ -794,7 +815,7 @@ async function saveSrtToDisk(srtContent, filename) {
 async function importSrtToPremiere(segments, options = {}) {
     const statusEl = options.statusEl || null;
     const setStatus = (msg) => {
-        if (statusEl) statusEl.textContent = msg;
+        setTranscribeStatusPlain(statusEl, msg);
     };
 
     if (!ppro) {
@@ -829,7 +850,7 @@ async function importSrtToPremiere(segments, options = {}) {
         const importOk = await project.importFiles([srtPath], true, targetBin, false);
         if (!importOk) throw new Error('Import du SRT échoué');
 
-        setStatus(`✅ SRT importé dans ${pathLabel} (${filename})`);
+        showSrtImportSuccessBadge(statusEl, pathLabel, filename);
         return true;
     } catch (error) {
         setStatus('❌ Erreur : ' + error.message);
