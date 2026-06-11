@@ -740,6 +740,80 @@ async function translateToLanguage(lang) {
 
 window.translateToLanguage = translateToLanguage;
 
+function normalizeMediaPath(path) {
+    return String(path || '').replace(/\\/g, '/').toLowerCase();
+}
+
+function delay(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function walkProjectItems(folderItem) {
+    const collected = [];
+    const items = await folderItem.getItems();
+    for (const item of items) {
+        collected.push(item);
+        const subFolder = ppro.FolderItem.cast(item);
+        if (subFolder) {
+            collected.push(...await walkProjectItems(subFolder));
+        }
+    }
+    return collected;
+}
+
+async function findProjectItemByMediaPath(project, mediaPath) {
+    const target = normalizeMediaPath(mediaPath);
+    const targetFile = target.split('/').pop();
+    const root = await project.getRootItem();
+    const allItems = await walkProjectItems(root);
+
+    for (const item of allItems) {
+        const clip = ppro.ClipProjectItem.cast(item);
+        if (!clip) continue;
+        try {
+            const path = await clip.getMediaFilePath();
+            if (path && normalizeMediaPath(path) === target) return item;
+        } catch (_) { /* clip sans chemin lisible */ }
+    }
+
+    for (const item of allItems) {
+        const clip = ppro.ClipProjectItem.cast(item);
+        if (!clip) continue;
+        try {
+            const matches = await clip.findItemsMatchingMediaPath(targetFile, true);
+            if (!matches?.length) continue;
+            for (const match of matches) {
+                const matchClip = ppro.ClipProjectItem.cast(match);
+                if (!matchClip) continue;
+                try {
+                    const path = await matchClip.getMediaFilePath();
+                    if (path && normalizeMediaPath(path) === target) return match;
+                } catch (_) { /* noop */ }
+            }
+            return matches[matches.length - 1];
+        } catch (_) { /* noop */ }
+    }
+
+    return null;
+}
+
+async function findImportedSrtItem(project, mediaPath, namesBefore) {
+    for (let attempt = 0; attempt < 6; attempt++) {
+        if (attempt > 0) await delay(150);
+
+        const byPath = await findProjectItemByMediaPath(project, mediaPath);
+        if (byPath) return byPath;
+
+        const root = await project.getRootItem();
+        const itemsAfter = await root.getItems();
+        for (const it of itemsAfter) {
+            if (!namesBefore.has(it.name)) return it;
+        }
+    }
+
+    return null;
+}
+
 async function saveSrtToDisk(srtContent, filename) {
     const fs = require('uxp').storage.localFileSystem;
 
@@ -793,17 +867,10 @@ async function importSrtToPremiere() {
         const importOk = await project.importFiles([srtPath], true, null, false);
         if (!importOk) throw new Error('Import du SRT échoué');
 
-        const rootAfter = await project.getRootItem();
-        const itemsAfter = await rootAfter.getItems();
-        let newItem = null;
-        for (const it of itemsAfter) {
-            if (!namesBefore.has(it.name)) {
-                newItem = it;
-                break;
-            }
+        const newItem = await findImportedSrtItem(project, srtPath, namesBefore);
+        if (!newItem) {
+            throw new Error('Impossible de retrouver le SRT importé dans le bin (import OK, liaison timeline échouée)');
         }
-
-        if (!newItem) throw new Error('Impossible de retrouver le SRT importé dans le bin');
 
         status.textContent = '⏳ Insertion sur la timeline...';
 
