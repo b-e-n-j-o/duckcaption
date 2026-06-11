@@ -30,7 +30,7 @@
                 </div>
                 <p id="fileStatusSrt"></p>
                 <section id="translationSection" style="display:none;">
-                    <p class="translation-hint">Chaque bouton envoie le SRT de l’éditeur vers le backend pour cette langue.</p>
+                    <p class="translation-hint">Chaque bouton traduit le SRT courant vers la langue choisie.</p>
                     <div class="lang-translate-row" role="group" aria-label="Traduire vers">
                         <button type="button" class="btn-lang-translate" data-lang="en" title="Traduire en anglais">
                             <span class="btn-lang-flag" aria-hidden="true">🇬🇧</span><span class="btn-lang-label">Anglais</span>
@@ -91,22 +91,6 @@
                     <sp-button id="transcribeBtn" disabled>Lancer transcription</sp-button>
                     <sp-progress-bar id="progressBar" style="display:none"></sp-progress-bar>
                     <p id="transcribeStatus"></p>
-                </section>
-
-                <hr>
-
-                <section id="editorSection" style="display:none;">
-                    <h2>Sous-titres</h2>
-                    <div id="srtEditorContainer" class="srt-editor"></div>
-                    <div class="download-filename-row">
-                        <label class="filename-label" for="downloadOriginalFilename">Nom du fichier</label>
-                        <input type="text" id="downloadOriginalFilename" class="filename-input" autocomplete="off" spellcheck="false" value="subtitles.srt">
-                    </div>
-                    <div class="srt-actions-row">
-                        <sp-button id="downloadOriginalBtn" disabled>💾 Télécharger SRT</sp-button>
-                        <sp-button id="importToPremiereBtn" variant="cta" disabled>📥 Importer dans Premiere</sp-button>
-                    </div>
-                    <p id="importPremiereStatus"></p>
                 </section>
             </div>
         </details>

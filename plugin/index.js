@@ -100,36 +100,6 @@ function serializeSrt(segments) {
     return segments.map((seg, idx) => `${idx + 1}\n${seg.time}\n${seg.text}\n`).join('\n');
 }
 
-function renderSRTEditor(segments) {
-    const container = document.getElementById('srtEditorContainer');
-    container.innerHTML = segments
-        .map(
-            (seg, idx) => `
-        <div class="srt-segment">
-            <div class="segment-header">
-                <span class="segment-number">#${idx + 1}</span>
-                <input type="text" class="time-input" value="${escapeHtml(seg.time)}" data-idx="${idx}">
-            </div>
-            <textarea class="text-input" data-idx="${idx}">${escapeHtml(seg.text)}</textarea>
-        </div>`
-        )
-        .join('');
-
-    container.querySelectorAll('.time-input').forEach((input) => {
-        input.addEventListener('change', (e) => {
-            const idx = parseInt(e.target.dataset.idx, 10);
-            if (segments[idx]) segments[idx].time = e.target.value;
-        });
-    });
-
-    container.querySelectorAll('.text-input').forEach((textarea) => {
-        textarea.addEventListener('input', (e) => {
-            const idx = parseInt(e.target.dataset.idx, 10);
-            if (segments[idx]) segments[idx].text = e.target.value;
-        });
-    });
-}
-
 function renderTranslatedSRTs() {
     const container = document.getElementById('translatedSRTsContainer');
     const preservedNames = {};
@@ -279,16 +249,8 @@ function expandAccordion(id) {
     if (el) el.open = true;
 }
 
-function showEditorWithSegments(segments, showTranslation) {
+function applySrtSegments(segments, showTranslation) {
     srtSegments = segments;
-    expandAccordion('accordionPremiere');
-    document.getElementById('editorSection').style.display = 'block';
-    document.getElementById('downloadOriginalBtn').disabled = segments.length === 0;
-    const importBtn = document.getElementById('importToPremiereBtn');
-    if (importBtn) importBtn.disabled = segments.length === 0;
-    const fnInput = document.getElementById('downloadOriginalFilename');
-    if (fnInput) fnInput.value = defaultOriginalSrtFilename();
-    renderSRTEditor(srtSegments);
     if (showTranslation) {
         expandAccordion('accordionSrtTranslate');
         document.getElementById('translationSection').style.display = 'block';
@@ -436,7 +398,6 @@ async function exportSelectedTrack() {
         expandAccordion('accordionPremiere');
         document.getElementById('transcriptionOptions').style.display = 'block';
         document.getElementById('transcribeBtn').disabled = false;
-        document.getElementById('editorSection').style.display = 'none';
         document.getElementById('translationSection').style.display = 'none';
         resetTranslationUi();
 
@@ -487,12 +448,6 @@ function initPlugin() {
     document.getElementById('loadAudioTracksBtn').addEventListener('click', chargerPistesAudio);
     document.getElementById('exportTrackBtn').addEventListener('click', exportSelectedTrack);
     document.getElementById('transcribeBtn').addEventListener('click', transcribe);
-    document.getElementById('downloadOriginalBtn').addEventListener('click', () => {
-        const inp = document.getElementById('downloadOriginalFilename');
-        const raw = inp ? inp.value : defaultOriginalSrtFilename();
-        saveSrtToDisk(serializeSrt(srtSegments), sanitizeFilename(raw));
-    });
-    document.getElementById('importToPremiereBtn').addEventListener('click', importSrtToPremiere);
     wireLanguageTranslateButtons();
 
     const maxWordsSlider = document.getElementById('maxWordsSlider');
@@ -547,7 +502,6 @@ async function importAudioFile() {
         expandAccordion('accordionPremiere');
         document.getElementById('transcriptionOptions').style.display = 'block';
         document.getElementById('transcribeBtn').disabled = false;
-        document.getElementById('editorSection').style.display = 'none';
         document.getElementById('translationSection').style.display = 'none';
         resetTranslationUi();
 
@@ -588,7 +542,7 @@ async function importSRTFile() {
         document.getElementById('transcribeBtn').disabled = true;
 
         resetTranslationUi();
-        showEditorWithSegments(parsed, true);
+        applySrtSegments(parsed, true);
 
         status.textContent = `✅ SRT chargé : ${file.name} (${parsed.length} segments)`;
     } catch (error) {
@@ -677,9 +631,10 @@ async function transcribe() {
         }
 
         resetTranslationUi();
-        showEditorWithSegments(parsed, true);
+        applySrtSegments(parsed, true);
 
-        status.textContent = '✅ Transcription terminée !';
+        status.textContent = '⏳ Import du SRT dans Premiere...';
+        await importSrtToPremiere(parsed, { statusEl: status });
         progressBar.style.display = 'none';
     } catch (error) {
         status.textContent = '❌ Erreur: ' + error.message;
@@ -740,93 +695,6 @@ async function translateToLanguage(lang) {
 
 window.translateToLanguage = translateToLanguage;
 
-function normalizeMediaPath(path) {
-    return String(path || '').replace(/\\/g, '/').toLowerCase();
-}
-
-function delay(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function walkProjectItems(folderItem) {
-    const collected = [];
-    const items = await folderItem.getItems();
-    for (const item of items) {
-        collected.push(item);
-        const subFolder = ppro.FolderItem.cast(item);
-        if (subFolder) {
-            collected.push(...await walkProjectItems(subFolder));
-        }
-    }
-    return collected;
-}
-
-async function findProjectItemByMediaPath(project, mediaPath) {
-    const target = normalizeMediaPath(mediaPath);
-    const targetFile = target.split('/').pop();
-    const root = await project.getRootItem();
-    const allItems = await walkProjectItems(root);
-
-    for (const item of allItems) {
-        const clip = ppro.ClipProjectItem.cast(item);
-        if (!clip) continue;
-        try {
-            const path = await clip.getMediaFilePath();
-            if (path && normalizeMediaPath(path) === target) return item;
-        } catch (_) { /* clip sans chemin lisible */ }
-    }
-
-    for (const item of allItems) {
-        const clip = ppro.ClipProjectItem.cast(item);
-        if (!clip) continue;
-        try {
-            const matches = await clip.findItemsMatchingMediaPath(targetFile, true);
-            if (!matches?.length) continue;
-            for (const match of matches) {
-                const matchClip = ppro.ClipProjectItem.cast(match);
-                if (!matchClip) continue;
-                try {
-                    const path = await matchClip.getMediaFilePath();
-                    if (path && normalizeMediaPath(path) === target) return match;
-                } catch (_) { /* noop */ }
-            }
-            return matches[matches.length - 1];
-        } catch (_) { /* noop */ }
-    }
-
-    return null;
-}
-
-async function getSequenceVideoFrameRate(sequence) {
-    try {
-        const settings = await sequence.getSettings();
-        if (settings) {
-            const frameRate = await settings.getVideoFrameRate();
-            if (frameRate) return frameRate;
-        }
-    } catch (e) {
-        console.warn('Frame rate séquence indisponible:', e);
-    }
-    return ppro.FrameRate.createWithValue(25);
-}
-
-async function findImportedSrtItem(project, mediaPath, namesBefore) {
-    for (let attempt = 0; attempt < 6; attempt++) {
-        if (attempt > 0) await delay(150);
-
-        const byPath = await findProjectItemByMediaPath(project, mediaPath);
-        if (byPath) return byPath;
-
-        const root = await project.getRootItem();
-        const itemsAfter = await root.getItems();
-        for (const it of itemsAfter) {
-            if (!namesBefore.has(it.name)) return it;
-        }
-    }
-
-    return null;
-}
-
 async function saveSrtToDisk(srtContent, filename) {
     const fs = require('uxp').storage.localFileSystem;
 
@@ -840,77 +708,46 @@ async function saveSrtToDisk(srtContent, filename) {
     }
 }
 
-async function importSrtToPremiere() {
-    const status = document.getElementById('importPremiereStatus');
+async function importSrtToPremiere(segments, options = {}) {
+    const statusEl = options.statusEl || null;
+    const setStatus = (msg) => {
+        if (statusEl) statusEl.textContent = msg;
+    };
 
     if (!ppro) {
-        status.textContent = '❌ Module premierepro indisponible';
-        return;
+        setStatus('❌ Module premierepro indisponible');
+        return false;
     }
-    if (!srtSegments || srtSegments.length === 0) {
-        status.textContent = '❌ Aucun sous-titre à importer';
-        return;
+
+    const segs = segments || srtSegments;
+    if (!segs || segs.length === 0) {
+        setStatus('❌ Aucun sous-titre à importer');
+        return false;
     }
 
     try {
-        status.textContent = '⏳ Préparation du SRT...';
-
-        const fnInput = document.getElementById('downloadOriginalFilename');
-        const rawName = fnInput ? fnInput.value : defaultOriginalSrtFilename();
-        const filename = sanitizeFilename(rawName);
+        const filename = sanitizeFilename(defaultOriginalSrtFilename());
 
         const fs = require('uxp').storage.localFileSystem;
         const tempFolder = await fs.getTemporaryFolder();
         const srtFile = await tempFolder.createFile(filename, { overwrite: true });
-        await srtFile.write(serializeSrt(srtSegments));
+        await srtFile.write(serializeSrt(segs));
         const srtPath = srtFile.nativePath;
 
         const project = await ppro.Project.getActiveProject();
         if (!project) throw new Error('Aucun projet ouvert');
 
-        const sequence = await project.getActiveSequence();
-        if (!sequence) throw new Error('Aucune séquence active');
-
-        const rootBefore = await project.getRootItem();
-        const itemsBefore = await rootBefore.getItems();
-        const namesBefore = new Set(itemsBefore.map((it) => it.name));
-
-        status.textContent = '⏳ Import du SRT dans le projet...';
+        setStatus('⏳ Import du SRT dans Premiere...');
 
         const importOk = await project.importFiles([srtPath], true, null, false);
         if (!importOk) throw new Error('Import du SRT échoué');
 
-        const newItem = await findImportedSrtItem(project, srtPath, namesBefore);
-        if (!newItem) {
-            throw new Error('Impossible de retrouver le SRT importé dans le bin (import OK, liaison timeline échouée)');
-        }
-
-        status.textContent = '⏳ Insertion sur la timeline...';
-
-        const frameRate = await getSequenceVideoFrameRate(sequence);
-        const startTime = ppro.TickTime.createWithFrameAndFrameRate(0, frameRate);
-        const editor = await ppro.SequenceEditor.getEditor(sequence);
-        const insertAction = await editor.createInsertProjectItemAction(
-            newItem,
-            startTime,
-            0,
-            0,
-            false
-        );
-
-        const success = project.executeTransaction((compoundAction) => {
-            compoundAction.addAction(insertAction);
-        }, 'Inserer SRT Duck Caption');
-
-        if (!success) {
-            status.textContent = `✅ SRT importé dans le projet (${filename}) — insertion timeline non effectuée`;
-            return;
-        }
-
-        status.textContent = `✅ SRT importé et placé sur la timeline (${filename})`;
+        setStatus(`✅ SRT importé dans Premiere (${filename})`);
+        return true;
     } catch (error) {
-        status.textContent = '❌ Erreur : ' + error.message;
+        setStatus('❌ Erreur : ' + error.message);
         console.error(error);
+        return false;
     }
 }
 
