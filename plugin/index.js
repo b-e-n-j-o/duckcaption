@@ -39,16 +39,18 @@ function basenameWithoutExt(filename) {
     return base.trim() || 'subtitles';
 }
 
-async function getProjectBaseName() {
+async function getActiveSequenceBaseName() {
     if (!ppro) return null;
     try {
         const project = await ppro.Project.getActiveProject();
         if (!project) return null;
-        const name = project.name;
+        const sequence = await project.getActiveSequence();
+        if (!sequence) return null;
+        const name = sequence.name;
         if (!name) return null;
         return basenameWithoutExt(name);
     } catch (e) {
-        console.warn('Nom de projet indisponible:', e);
+        console.warn('Nom de séquence indisponible:', e);
         return null;
     }
 }
@@ -62,7 +64,7 @@ function sanitizeFilename(name) {
     return s;
 }
 
-/** Basé sur `sourceAudioBaseName` (nom du projet .prproj en export / transcription depuis Premiere quand disponible). */
+/** Basé sur `sourceAudioBaseName` (nom de la séquence active Premiere quand disponible). */
 function defaultOriginalSrtFilename() {
     return `${sourceAudioBaseName}.srt`;
 }
@@ -395,8 +397,8 @@ async function exportSelectedTrack() {
         }
 
         exportedAudioPath = outPath;
-        const projectBaseName = await getProjectBaseName();
-        sourceAudioBaseName = projectBaseName || basenameWithoutExt(outName);
+        const sequenceBaseName = await getActiveSequenceBaseName();
+        sourceAudioBaseName = sequenceBaseName || basenameWithoutExt(outName);
 
         expandAccordion('accordionPremiere');
         document.getElementById('transcriptionOptions').style.display = 'block';
@@ -567,8 +569,8 @@ async function transcribe() {
         const fs = require('uxp').storage.localFileSystem;
         const audioFile = await fs.getEntryWithUrl(exportedAudioPath);
         sourceAudioBaseName = basenameWithoutExt(audioFile.name);
-        const projectBaseName = await getProjectBaseName();
-        if (projectBaseName) sourceAudioBaseName = projectBaseName;
+        const sequenceBaseName = await getActiveSequenceBaseName();
+        if (sequenceBaseName) sourceAudioBaseName = sequenceBaseName;
         const arrayBuffer = await audioFile.read({ format: require('uxp').storage.formats.binary });
 
         status.textContent = '⏳ Upload...';
@@ -807,6 +809,9 @@ async function importSrtToPremiere(segments, options = {}) {
     }
 
     try {
+        const sequenceBaseName = await getActiveSequenceBaseName();
+        if (sequenceBaseName) sourceAudioBaseName = sequenceBaseName;
+
         const filename = sanitizeFilename(defaultOriginalSrtFilename());
 
         const fs = require('uxp').storage.localFileSystem;
