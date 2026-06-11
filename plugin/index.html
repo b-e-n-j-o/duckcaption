@@ -8,7 +8,7 @@
 <body>
     <div class="container">
         <header class="header-row">
-            <h1>🦆 Duck Caption test</h1>
+            <h1>🦆 Duck Caption</h1>
             <span id="backendLed" class="backend-led backend-led--pending" title="Vérification du serveur…" role="status" aria-live="polite"></span>
         </header>
         <hr>
@@ -25,7 +25,7 @@
         <hr>
 
         <section>
-            <h2>2. Inspection séquence DEBUG</h2>
+            <h2>2. Inspection séquence</h2>
             <button id="loadAudioTracksBtn">Charger les pistes</button>
             <p id="audioTracksStatus"></p>
             <div style="border:2px solid red; padding:10px;">
@@ -41,17 +41,17 @@
         <hr>
 
         <section id="transcriptionOptions">
-            <h2>3. Options transcription</h2>
+            <h2>3. Options de transcription</h2>
             <div class="slider-group">
-                <label>Mots max : <strong id="maxWordsValue">5</strong></label>
+                <label>Mots max : <strong id="maxWordsValue">10</strong></label>
                 <input type="range" id="maxWordsSlider" min="1" max="20" value="5">
             </div>
             <div class="slider-group">
-                <label>Caractères max : <strong id="maxCharsValue">24</strong></label>
+                <label>Caractères max : <strong id="maxCharsValue">42</strong></label>
                 <input type="range" id="maxCharsSlider" min="10" max="80" value="24">
             </div>
             <div class="slider-group">
-                <label>Caractères / ligne : <strong id="maxCharsPerLineValue">42</strong></label>
+                <label>Caractères / ligne : <strong id="maxCharsPerLineValue">21</strong></label>
                 <input type="range" id="maxCharsPerLineSlider" min="5" max="50" value="42">
             </div>
             <sp-textfield id="contextInput" placeholder="Contexte (optionnel)" quiet></sp-textfield>
